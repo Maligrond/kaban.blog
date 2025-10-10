@@ -85,5 +85,3 @@ collections:
       - { label: Flag (image path or emoji), name: flag, widget: string }
       - { label: Favorite, name: favorite, widget: boolean, required: false }
       - { label: Body, name: body, widget: markdown, required: false }
-
-

@@ -2,7 +2,7 @@
   command = "npm run build"
   publish = "dist"
 
-# Serve admin files directly from public/admin
+# Serve admin files
 [[redirects]]
   from = "/admin"
   to = "/admin/index.html"
@@ -12,5 +12,3 @@
   from = "/admin/*"
   to = "/admin/:splat"
   status = 200
-
-
