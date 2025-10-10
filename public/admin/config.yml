@@ -14,9 +14,12 @@ collections:
     label: Blog Posts
     folder: "src/content/blog"
     create: true
-    slug: "{{slug}}"
+    slug: "{{slug}}/index"
+    path: "{{slug}}/index"
     extension: "md"
     format: "frontmatter"
+    nested:
+      depth: 100
     fields:
       - { label: Title, name: title, widget: string }
       - { label: Description, name: description, widget: text }
