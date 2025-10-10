@@ -1,0 +1,47 @@
+---
+import { cn } from "@/lib/utils";
+import Button from "./Button.astro";
+
+export interface Props {
+  name: string;
+  description: string;
+  href: string;
+  cta: string;
+  class?: string;
+}
+
+const { name, description, href, cta, class: className } = Astro.props as Props;
+---
+<div
+  class={cn(
+    "group relative flex flex-col justify-between overflow-hidden rounded-xl transform-gpu aspect-square",
+    // transparent card with subtle border that matches site links
+    "bg-transparent border border-black/15 dark:border-white/20",
+    // hover surface similar to about links
+    "transition-colors duration-300 ease-in-out hover:bg-black/5 dark:hover:bg-white/5",
+    className,
+  )}
+>
+  <div>
+    <slot name="background" />
+  </div>
+
+  <div class="pointer-events-none z-10 flex transform-gpu flex-col gap-1 p-6 transition-all duration-300 group-hover:-translate-y-10">
+    <h3 class="text-xl font-semibold text-neutral-700 dark:text-neutral-300">{name}</h3>
+    <p class="max-w-lg text-neutral-400">{description}</p>
+  </div>
+
+  <div class={cn("pointer-events-none absolute bottom-0 flex w-full translate-y-10 transform-gpu flex-row items-center p-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100")}
+  >
+    <Button variant="ghost" class="pointer-events-auto" href={href} size="sm">
+      {cta}
+      <svg class="ml-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M5 12h14" />
+        <path d="m12 5 7 7-7 7" />
+      </svg>
+    </Button>
+  </div>
+  <div class="pointer-events-none absolute inset-0 transform-gpu transition-all duration-300" />
+</div>
+
+

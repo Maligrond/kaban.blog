@@ -1,0 +1,26 @@
+---
+import BentoGrid from "./BentoGrid.astro";
+import BentoCard from "./BentoCard.astro";
+
+const features = [
+  { name: "Книги", description: "Что я читаю и рекомендую.", href: "/about/books", cta: "Смотреть", className: "", icon: "book", emoji: "📚" },
+  { name: "Игры", description: "Любимые игры и впечатления.", href: "/about/games", cta: "Смотреть", className: "", icon: "gamepad", emoji: "🎮" },
+  { name: "Страны", description: "Где я был и что увидел.", href: "/about/countries", cta: "Смотреть", className: "", icon: "globe", emoji: "🌍" },
+  { name: "Фильмы", description: "Подборки любимых фильмов.", href: "/about/movies", cta: "Смотреть", className: "", icon: "film", emoji: "🎬" },
+  { name: "Музыка", description: "Что слушаю в последнее время.", href: "/about/music", cta: "Смотреть", className: "", icon: "music", emoji: "🎵" },
+];
+---
+<BentoGrid class="lg:grid-rows-3">
+  {features.map((f) => (
+    <BentoCard name={f.name} description={f.description} href={f.href} cta={f.cta} class={f.className}>
+      <fragment slot="background">
+        <div class="absolute inset-0 flex items-start justify-end p-6 select-none pointer-events-none">
+          <div class="text-[6rem] leading-none opacity-20 grayscale">{f.emoji}</div>
+        </div>
+      </fragment>
+      
+    </BentoCard>
+  ))}
+</BentoGrid>
+
+
