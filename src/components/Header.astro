@@ -22,11 +22,13 @@ import { SITE } from "@consts";
           {`/`}
         </span>
         <Link href="/bookmarks">закладки</Link>
-        <span>
+        <span class="hidden sm:inline">
           {`/`}
         </span>
-        <Link href="/admin" className="hidden sm:inline">admin</Link>
         <span class="hidden sm:inline">
+          <Link href="/admin">admin</Link>
+        </span>
+        <span>
           {`/`}
         </span>
         <button
