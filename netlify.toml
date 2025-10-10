@@ -2,12 +2,15 @@
   command = "npm run build"
   publish = "dist"
 
-# Proxy /admin path on the blog to your self-hosted PagesCMS admin app
-# Replace admin.yourdomain.com with your actual admin app domain
+# Serve admin files directly from public/admin
+[[redirects]]
+  from = "/admin"
+  to = "/admin/index.html"
+  status = 200
+
 [[redirects]]
   from = "/admin/*"
-  to = "https://admin.kaban.blog/:splat"
+  to = "/admin/:splat"
   status = 200
-  force = true
 
 
