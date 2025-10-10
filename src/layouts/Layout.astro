@@ -20,33 +20,11 @@ const { title, description, disableTransitions = false } = Astro.props;
     <Head title={`${title} | ${SITE.TITLE}`} description={description} />
   </head>
   <body>
-    <script is:inline src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <Header />
     <main>
       <slot />
     </main>
     <Footer />
     <PageFind />
-    <script is:inline>
-      // Wait for the widget to load
-      function initIdentity() {
-        if (window.netlifyIdentity) {
-          window.netlifyIdentity.on("init", user => {
-            if (!user) {
-              window.netlifyIdentity.on("login", () => {
-                window.location.href = "/admin/";
-              });
-            }
-          });
-        }
-      }
-    
-      // Initialize on load
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initIdentity);
-      } else {
-        initIdentity();
-      }
-    </script>
   </body>
 </html>
