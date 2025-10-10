@@ -8,7 +8,13 @@
     <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   </head>
   <body>
-    <!-- Decap CMS mounts itself onto the body -->
+    <script>
+      CMS.init({
+        config: {
+          load_config_file: true
+        }
+      });
+    </script>
   </body>
 </html>
 
