@@ -1,0 +1,91 @@
+backend:
+  name: github
+  repo: Maligrond/astro-micro-new
+  branch: main
+  base_url: https://yourdomain.com
+  auth_endpoint: /.netlify/functions/auth
+
+site_url: /
+logo_url: /favicon.svg
+media_folder: "public/uploads"
+public_folder: "/uploads"
+
+publish_mode: editorial_workflow
+
+collections:
+  - name: blog
+    label: Blog Posts
+    folder: "src/content/blog"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Description, name: description, widget: text }
+      - { label: Date, name: date, widget: datetime, format: "YYYY-MM-DD" }
+      - { label: Tags, name: tags, widget: list, default: [] }
+      - { label: Body, name: body, widget: markdown }
+
+  - name: books
+    label: Books
+    folder: "src/content/books"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Author, name: author, widget: string }
+      - { label: Date, name: date, widget: datetime, format: "YYYY-MM-DD" }
+      - { label: Rating (1-5), name: rating, widget: number, min: 1, max: 5, step: 1 }
+      - { label: External URL, name: url, widget: string, required: false }
+      - { label: Body, name: body, widget: markdown, required: false }
+
+  - name: games
+    label: Games
+    folder: "src/content/games"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Year, name: year, widget: number }
+      - { label: Date, name: date, widget: datetime, format: "YYYY-MM-DD" }
+      - { label: Rating (1-5), name: rating, widget: number, min: 1, max: 5, step: 1 }
+      - { label: External URL, name: url, widget: string, required: false }
+      - { label: Body, name: body, widget: markdown, required: false }
+
+  - name: movies
+    label: Movies
+    folder: "src/content/movies"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Year, name: year, widget: number }
+      - { label: Date, name: date, widget: datetime, format: "YYYY-MM-DD" }
+      - { label: Rating (1-5), name: rating, widget: number, min: 1, max: 5, step: 1 }
+      - { label: External URL, name: url, widget: string, required: false }
+      - { label: Body, name: body, widget: markdown, required: false }
+
+  - name: countries
+    label: Countries
+    folder: "src/content/countries"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Country, name: country, widget: string }
+      - { label: Date, name: date, widget: datetime, format: "YYYY-MM-DD" }
+      - { label: Rating (1-5), name: rating, widget: number, min: 1, max: 5, step: 1 }
+      - { label: Flag (image path or emoji), name: flag, widget: string }
+      - { label: Favorite, name: favorite, widget: boolean, required: false }
+      - { label: Body, name: body, widget: markdown, required: false }
+
+
