@@ -17,9 +17,9 @@ const { title, description } = Astro.props;
 <html lang="ru">
   <head>
     <Head title={`${title} | ${SITE.TITLE}`} description={description} />
-    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   </head>
   <body>
+    <script is:inline src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
     <Header />
     <main>
       <slot />
@@ -27,6 +27,7 @@ const { title, description } = Astro.props;
     <Footer />
     <PageFind />
     <script is:inline>
+      // Initialize Netlify Identity
       if (window.netlifyIdentity) {
         window.netlifyIdentity.on("init", user => {
           if (!user) {
@@ -36,6 +37,13 @@ const { title, description } = Astro.props;
           }
         });
       }
+      
+      // Handle astro transitions
+      document.addEventListener("astro:page-load", () => {
+        if (window.netlifyIdentity) {
+          window.netlifyIdentity.init();
+        }
+      });
     </script>
   </body>
 </html>
