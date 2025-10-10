@@ -5,30 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Content Manager</title>
     <link rel="preconnect" href="https://unpkg.com">
-    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
   </head>
   <body>
+    <div id="cms-loading">Loading CMS...</div>
+    <script src="https://unpkg.com/decap-cms@3.8.4/dist/decap-cms.js"></script>
     <script>
       // Wait for CMS to load
+      function initCMS() {
+        if (typeof CMS !== 'undefined') {
+          document.getElementById('cms-loading').style.display = 'none';
+          CMS.init({
+            config: {
+              load_config_file: true
+            }
+          });
+        } else {
+          setTimeout(initCMS, 100);
+        }
+      }
+      
+      // Start checking for CMS after a short delay
+      setTimeout(function() {
+        if (typeof CMS === 'undefined') {
+          document.getElementById('cms-loading').innerHTML = '<h1>CMS Loading Error</h1><p>Failed to load Decap CMS. Please check your internet connection and refresh the page.</p><p>If the problem persists, try using a different browser or clearing your cache.</p>';
+        } else {
+          initCMS();
+        }
+      }, 3000);
+      
+      // Also try to init immediately if CMS is already loaded
       if (typeof CMS !== 'undefined') {
-        CMS.init({
-          config: {
-            load_config_file: true
-          }
-        });
-      } else {
-        window.addEventListener('load', function() {
-          if (typeof CMS !== 'undefined') {
-            CMS.init({
-              config: {
-                load_config_file: true
-              }
-            });
-          } else {
-            console.error('Decap CMS failed to load');
-            document.body.innerHTML = '<h1>CMS Loading Error</h1><p>Please refresh the page or check your internet connection.</p>';
-          }
-        });
+        initCMS();
       }
     </script>
   </body>
