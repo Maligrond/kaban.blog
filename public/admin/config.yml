@@ -2,7 +2,7 @@ backend:
   name: github
   repo: Maligrond/astro-micro-new
   branch: main
-  base_url: https://yourdomain.com
+  base_url: https://kaban.blog
   auth_endpoint: /.netlify/functions/auth
 
 site_url: /
