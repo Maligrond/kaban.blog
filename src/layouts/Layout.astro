@@ -8,9 +8,10 @@ import { SITE } from "@consts";
 type Props = {
   title: string;
   description: string;
+  disableTransitions?: boolean;
 };
 
-const { title, description } = Astro.props;
+const { title, description, disableTransitions = false } = Astro.props;
 ---
 
 <!doctype html>
@@ -27,23 +28,25 @@ const { title, description } = Astro.props;
     <Footer />
     <PageFind />
     <script is:inline>
-      // Initialize Netlify Identity
-      if (window.netlifyIdentity) {
-        window.netlifyIdentity.on("init", user => {
-          if (!user) {
-            window.netlifyIdentity.on("login", () => {
-              document.location.href = "/admin/";
-            });
-          }
-        });
-      }
-      
-      // Handle astro transitions
-      document.addEventListener("astro:page-load", () => {
+      // Wait for the widget to load
+      function initIdentity() {
         if (window.netlifyIdentity) {
-          window.netlifyIdentity.init();
+          window.netlifyIdentity.on("init", user => {
+            if (!user) {
+              window.netlifyIdentity.on("login", () => {
+                window.location.href = "/admin/";
+              });
+            }
+          });
         }
-      });
+      }
+    
+      // Initialize on load
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initIdentity);
+      } else {
+        initIdentity();
+      }
     </script>
   </body>
 </html>
