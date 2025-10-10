@@ -9,11 +9,27 @@
   </head>
   <body>
     <script>
-      CMS.init({
-        config: {
-          load_config_file: true
-        }
-      });
+      // Wait for CMS to load
+      if (typeof CMS !== 'undefined') {
+        CMS.init({
+          config: {
+            load_config_file: true
+          }
+        });
+      } else {
+        window.addEventListener('load', function() {
+          if (typeof CMS !== 'undefined') {
+            CMS.init({
+              config: {
+                load_config_file: true
+              }
+            });
+          } else {
+            console.error('Decap CMS failed to load');
+            document.body.innerHTML = '<h1>CMS Loading Error</h1><p>Please refresh the page or check your internet connection.</p>';
+          }
+        });
+      }
     </script>
   </body>
 </html>
