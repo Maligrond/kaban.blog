@@ -1,0 +1,22 @@
+{
+    "images": [
+        {
+            "src": "@images/gallery/astro-micro.jpg",
+            "alt": "Astro Micro тема",
+            "title": "Astro Micro",
+            "description": "Минималистичная и быстрая тема для Astro"
+        },
+        {
+            "src": "@images/gallery/astro-sphere.jpg",
+            "alt": "Astro Sphere тема",
+            "title": "Astro Sphere",
+            "description": "Современный дизайн для блогов и портфолио"
+        },
+        {
+            "src": "@images/gallery/astro-nano.png",
+            "alt": "Astro Nano тема",
+            "title": "Astro Nano",
+            "description": "Легковесная тема с отличной производительностью"
+        }
+    ]
+}

@@ -23,22 +23,13 @@ const projects: CollectionEntry<"projects">[] = (
 <Layout title={HOME.TITLE} description={HOME.DESCRIPTION}>
   <Container>
     <aside data-pagefind-ignore>
-      <h1 class="font-semibold text-black dark:text-white">
-        а кабан 🐗
-      </h1>
       <div class="space-y-16">
         <section>
           <article class="space-y-4">
-            <span>
-              <p>
-                И это мое кабанское описание 🐗
-              </p>
-            </span>
-            <span class="animate">
-              <p>
-                Да да я
-              </p>
-            </span>
+            <p class="font-serif text-xl leading-relaxed">
+              Привет, я Кабан — бездельник из Штутгарта. Здесь я ни о чём не
+              пишу, просто экспериментирую.
+            </p>
           </article>
         </section>
 
@@ -49,7 +40,7 @@ const projects: CollectionEntry<"projects">[] = (
             </h2>
             <Link href="/blog"> Все посты </Link>
           </div>
-          <ul class="not-prose flex flex-col gap-4">
+          <ul class="not-prose flex flex-col gap-1">
             {
               blog.map((post) => (
                 <li>
@@ -66,8 +57,9 @@ const projects: CollectionEntry<"projects">[] = (
           </h2>
           <article>
             <p>
-              Если вы хотите связаться со мной по какому-либо вопросу или просто сказать
-              привет, напишите мне в социальных сетях или отправьте письмо по электронной почте.
+              Если вы хотите связаться со мной по какому-либо вопросу или просто
+              сказать привет, напишите мне в социальных сетях или отправьте
+              письмо по электронной почте.
             </p>
           </article>
           <ul class="not-prose flex flex-wrap gap-2">

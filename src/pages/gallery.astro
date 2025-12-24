@@ -1,0 +1,19 @@
+---
+import Layout from "@layouts/Layout.astro";
+import Container from "@components/Container.astro";
+import Pandabox from "@components/Pandabox.astro";
+---
+
+<Layout title="Галерея" description="Фотогалерея">
+    <Container>
+        <h1 class="mb-8 font-semibold text-black dark:text-white">
+            Галерея 📸
+        </h1>
+
+        <p class="mb-8 text-neutral-600 dark:text-neutral-400">
+            Пример использования Pandabox галереи с fade-переходами.
+        </p>
+
+        <Pandabox galleryid="test" transitionType="fade" />
+    </Container>
+</Layout>

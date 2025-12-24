@@ -20,14 +20,16 @@ body {
 body {
   @apply font-sans antialiased;
   @apply flex flex-col;
-  @apply bg-neutral-100 dark:bg-neutral-900;
-  @apply text-black/75 dark:text-white/75;
+  @apply bg-white dark:bg-neutral-950;
+  @apply text-neutral-700 dark:text-neutral-300;
+  font-size: 20px;
+  line-height: 1.6;
 }
 
 header {
-  @apply fixed left-0 right-0 top-0 z-50 py-6;
-  @apply bg-neutral-100/75 dark:bg-neutral-900/75;
-  @apply saturate-200 backdrop-blur-sm;
+  @apply fixed left-0 right-0 top-0 z-50 py-3;
+  @apply bg-white/90 dark:bg-neutral-950/90;
+  @apply backdrop-blur-sm;
 }
 
 main {
@@ -39,10 +41,17 @@ footer {
 }
 
 article {
-  @apply prose prose-neutral max-w-full dark:prose-invert prose-img:mx-auto prose-img:my-auto;
-  @apply prose-headings:font-semibold;
-  @apply prose-headings:text-black prose-headings:dark:text-white;
-  @apply prose-img:rounded-lg; /* Add this line for rounded corners */
+  @apply prose dark:prose-invert max-w-none;
+  @apply prose-headings:font-sans prose-headings:font-semibold;
+  @apply prose-headings:text-neutral-900 prose-headings:dark:text-neutral-100;
+  @apply prose-p:font-serif prose-p:text-neutral-700 prose-p:dark:text-neutral-300;
+  @apply prose-a:text-neutral-800 prose-a:dark:text-neutral-200;
+  @apply prose-blockquote:font-serif prose-blockquote:border-neutral-300 prose-blockquote:dark:border-neutral-700;
+  @apply prose-li:font-serif;
+  @apply prose-img:rounded-lg;
+  font-family: Georgia, Lora, serif;
+  font-size: 1.25rem;
+  line-height: 1.8;
 }
 
 @layer utilities {
@@ -51,6 +60,7 @@ article {
     @apply decoration-black/30 dark:decoration-white/30;
     @apply transition-colors duration-300 ease-in-out;
   }
+
   article a:hover {
     @apply text-black dark:text-white;
     @apply decoration-black/50 dark:decoration-white/50;

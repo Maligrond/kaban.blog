@@ -1,0 +1,79 @@
+---
+import type { CollectionEntry } from "astro:content";
+import FormattedDate from "@components/FormattedDate.astro";
+
+type Props = {
+    currentPostId: string;
+    currentTags: string[];
+    allPosts: CollectionEntry<"blog">[];
+};
+
+const { currentPostId, currentTags, allPosts } = Astro.props;
+
+// Найти похожие посты по тегам
+function getRelatedPosts() {
+    if (!currentTags || currentTags.length === 0) {
+        return [];
+    }
+
+    const relatedPosts = allPosts
+        .filter((post) => {
+            // Исключить текущий пост
+            if (post.id === currentPostId) return false;
+            // Проверить есть ли общие теги
+            const postTags = post.data.tags || [];
+            return postTags.some((tag) => currentTags.includes(tag));
+        })
+        .map((post) => {
+            // Посчитать количество совпадающих тегов
+            const postTags = post.data.tags || [];
+            const matchCount = postTags.filter((tag) =>
+                currentTags.includes(tag),
+            ).length;
+            return { post, matchCount };
+        })
+        .sort((a, b) => b.matchCount - a.matchCount)
+        .slice(0, 5)
+        .map((item) => item.post);
+
+    return relatedPosts;
+}
+
+const relatedPosts = getRelatedPosts();
+---
+
+{
+    relatedPosts.length > 0 && (
+        <section class="animate">
+            <h2 class="mb-6 text-xl font-semibold text-black dark:text-white">
+                Похожие статьи
+            </h2>
+            <ul class="flex flex-col gap-4">
+                {relatedPosts.map((post) => (
+                    <li class="group">
+                        <a
+                            href={`/blog/${post.id}`}
+                            class="flex flex-col gap-1 py-2"
+                        >
+                            <span class="text-base font-medium text-black decoration-2 underline-offset-2 transition-[text-decoration-thickness] duration-200 group-hover:underline dark:text-white">
+                                {post.data.title}
+                            </span>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">
+                                <FormattedDate date={post.data.date} />
+                            </span>
+                            {post.data.tags && post.data.tags.length > 0 && (
+                                <div class="mt-1 flex flex-wrap gap-1.5">
+                                    {post.data.tags.map((tag) => (
+                                        <span class="rounded border border-black/10 px-2 py-0.5 text-xs text-gray-600 dark:border-white/15 dark:text-gray-400">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </a>
+                    </li>
+                ))}
+            </ul>
+        </section>
+    )
+}

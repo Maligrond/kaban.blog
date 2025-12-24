@@ -10,21 +10,33 @@ const { entry } = Astro.props as {
 };
 
 const isBlog = entry.collection === "blog";
-const image = isBlog ? (entry.data.previewImage || "/blog-placeholder-1.jpg") : undefined;
+const image = isBlog
+  ? entry.data.previewImage || "/blog-placeholder-1.jpg"
+  : undefined;
 ---
 
 <a
   href={`/${entry.collection}/${entry.id}`}
-  class="group flex flex-col py-2 px-0 border-0 bg-transparent hover:underline transition-colors duration-200"
+  class="group flex flex-col border-0 bg-transparent px-0 transition-colors duration-200 hover:underline"
 >
-  <span class="flex items-baseline justify-between w-full">
-    <span class="truncate font-medium text-base text-black dark:text-white transition-[text-decoration-thickness] duration-200 group-hover:underline underline-offset-2 decoration-2">
+  <span class="flex w-full items-baseline justify-between">
+    <span
+      class="truncate text-base font-medium text-black decoration-2 underline-offset-2 transition-[text-decoration-thickness] duration-200 group-hover:underline dark:text-white"
+    >
       {entry.data.title}
     </span>
-    {isBlog && (
-      <span class="ml-4 min-w-[120px] text-right text-sm text-gray-500 dark:text-gray-400 tabular-nums flex-shrink-0">
-        {entry.data.date instanceof Date ? entry.data.date.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' }) : entry.data.date}
-      </span>
-    )}
+    {
+      isBlog && (
+        <span class="ml-4 min-w-[120px] flex-shrink-0 text-right text-sm tabular-nums text-gray-500 dark:text-gray-400">
+          {entry.data.date instanceof Date
+            ? entry.data.date.toLocaleDateString("ru-RU", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              })
+            : entry.data.date}
+        </span>
+      )
+    }
   </span>
 </a>
