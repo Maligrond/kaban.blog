@@ -1,6 +1,9 @@
 backend:
-  name: git-gateway
+  name: github
+  repo: Maligrond/astro-micro-new  # ЗАМЕНИТЕ на ваш username/repo
   branch: main
+  base_url: https://api.netlify.com
+  auth_endpoint: auth
 
 site_url: /
 logo_url: /favicon.svg
