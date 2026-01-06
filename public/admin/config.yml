@@ -2,7 +2,7 @@
 # Optimized for GitHub Pages
 
 backend:
-  name: git_gateway
+  name: git-gateway
   branch: main
 
 # Allow direct local editing when running npx decap-server
