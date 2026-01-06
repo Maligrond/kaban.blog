@@ -7,6 +7,7 @@
     "start": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
+    "cms": "npx decap-server",
     "astro": "astro"
   },
   "dependencies": {
