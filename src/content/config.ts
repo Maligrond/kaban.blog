@@ -55,13 +55,15 @@ const countries = defineCollection({
 });
 
 const bookmarks = defineCollection({
-  type: 'content',
+  type: 'data',
   schema: z.object({
-    title: z.string(),
-    url: z.string(),
-    description: z.string().optional(),
-    date: z.string(),
-    tags: z.array(z.string()).optional(),
+    items: z.array(z.object({
+      title: z.string(),
+      url: z.string(),
+      description: z.string().optional(),
+      date: z.string(),
+      tags: z.array(z.string()).optional(),
+    })),
   }),
 });
 

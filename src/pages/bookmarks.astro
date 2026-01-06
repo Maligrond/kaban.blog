@@ -2,14 +2,15 @@
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
 
-import { getCollection } from "astro:content";
+import { getEntry } from "astro:content";
 
-// Fetch bookmarks from content collection
-const bookmarks = await getCollection("bookmarks");
+// Fetch bookmarks from content collection (single file "items")
+const entry = await getEntry("bookmarks", "items");
+const bookmarks = entry?.data.items || [];
 
 // Sort by date (newest first)
 const sortedBookmarks = bookmarks.sort(
-  (a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime(),
+  (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
 );
 ---
 
@@ -31,7 +32,7 @@ const sortedBookmarks = bookmarks.sort(
         {
           sortedBookmarks.map((bookmark) => (
             <a
-              href={bookmark.data.url}
+              href={bookmark.url}
               target="_blank"
               rel="noopener noreferrer"
               class="group block no-underline"
@@ -39,16 +40,16 @@ const sortedBookmarks = bookmarks.sort(
               <div class="flex items-center justify-between gap-4 rounded px-3 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
                 <div class="flex min-w-0 flex-1 items-center gap-3">
                   <h3 class="truncate font-medium text-black transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
-                    {bookmark.data.title}
+                    {bookmark.title}
                   </h3>
                 </div>
 
                 <div class="flex-shrink-0 font-medium text-gray-500 dark:text-gray-400">
                   <span class="group-hover:hidden">
-                    {new Date(bookmark.data.date).toLocaleDateString("ru-RU")}
+                    {new Date(bookmark.date).toLocaleDateString("ru-RU")}
                   </span>
                   <span class="hidden text-blue-600 group-hover:inline dark:text-blue-400">
-                    {new URL(bookmark.data.url).hostname}
+                    {new URL(bookmark.url).hostname}
                   </span>
                 </div>
               </div>
