@@ -2,39 +2,39 @@
 import type { CollectionEntry } from "astro:content";
 
 type Props = {
-  entry: CollectionEntry<"blog"> | CollectionEntry<"projects">;
+  entry?: CollectionEntry<"blog"> | CollectionEntry<"projects">;
+  title?: string;
+  href?: string;
+  date?: Date | string;
 };
 
-const { entry } = Astro.props as {
-  entry: CollectionEntry<"blog"> | CollectionEntry<"projects">;
-};
+const { entry, title, href, date } = Astro.props;
 
-const isBlog = entry.collection === "blog";
-const image = isBlog
-  ? entry.data.previewImage || "/blog-placeholder-1.jpg"
-  : undefined;
+const derivedTitle = entry ? entry.data.title : title;
+const derivedHref = entry ? `/${entry.collection}/${entry.id}` : href;
+const derivedDate = entry ? entry.data.date : date;
 ---
 
 <a
-  href={`/${entry.collection}/${entry.id}`}
+  href={derivedHref}
   class="group flex flex-col border-0 bg-transparent px-0 transition-colors duration-200 hover:underline"
 >
   <span class="flex w-full items-baseline justify-between">
     <span
       class="truncate text-base font-medium text-black decoration-2 underline-offset-2 transition-[text-decoration-thickness] duration-200 group-hover:underline dark:text-white"
     >
-      {entry.data.title}
+      {derivedTitle}
     </span>
     {
-      isBlog && (
+      derivedDate && (
         <span class="ml-4 min-w-[120px] flex-shrink-0 text-right text-sm tabular-nums text-gray-500 dark:text-gray-400">
-          {entry.data.date instanceof Date
-            ? entry.data.date.toLocaleDateString("ru-RU", {
+          {derivedDate instanceof Date
+            ? derivedDate.toLocaleDateString("ru-RU", {
                 day: "2-digit",
                 month: "long",
                 year: "numeric",
               })
-            : entry.data.date}
+            : derivedDate}
         </span>
       )
     }

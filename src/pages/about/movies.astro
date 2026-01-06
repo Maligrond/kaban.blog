@@ -2,93 +2,79 @@
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
 import BackToPrevious from "@components/BackToPrevious.astro";
-import fs from 'fs';
-import path from 'path';
+import ArrowCard from "@components/ArrowCard.astro";
+import fs from "fs";
+import path from "path";
 
 // Dynamically load movies from markdown files
-const moviesDir = path.join(process.cwd(), 'src/content/movies');
-const files = fs.readdirSync(moviesDir).filter(file => file.endsWith('.md'));
+const moviesDir = path.join(process.cwd(), "src/content/movies");
+const files = fs.readdirSync(moviesDir).filter((file) => file.endsWith(".md"));
 
-const movies = files.map(file => {
-  const filePath = path.join(moviesDir, file);
-  const content = fs.readFileSync(filePath, 'utf-8');
-  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-  
-  if (!frontmatterMatch) return null;
-  
-  const frontmatter = frontmatterMatch[1];
-  const data: Record<string, any> = {};
-  const frontmatterLines = frontmatter.split('\n');
-  
-  for (const line of frontmatterLines) {
-    const [key, ...valueParts] = line.split(':');
-    if (key && valueParts.length > 0) {
-      const value = valueParts.join(':').trim();
-      if (key === 'rating' || key === 'year') {
-        data[key] = parseInt(value);
-      } else {
-        data[key] = value.replace(/^["']|["']$/g, '');
+const movies = files
+  .map((file) => {
+    const filePath = path.join(moviesDir, file);
+    const content = fs.readFileSync(filePath, "utf-8");
+    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+
+    if (!frontmatterMatch) return null;
+
+    const frontmatter = frontmatterMatch[1];
+    const data: Record<string, any> = {};
+    const frontmatterLines = frontmatter.split("\n");
+
+    for (const line of frontmatterLines) {
+      const [key, ...valueParts] = line.split(":");
+      if (key && valueParts.length > 0) {
+        const value = valueParts.join(":").trim();
+        if (key === "rating" || key === "year") {
+          data[key] = parseInt(value);
+        } else {
+          data[key] = value.replace(/^["']|["']$/g, "");
+        }
       }
     }
-  }
-  
-  return {
-    id: file.replace('.md', ''),
-    data
-  };
-}).filter(Boolean);
 
-const sortedMovies = movies.sort((a, b) => new Date(b?.data?.date || 0).getTime() - new Date(a?.data?.date || 0).getTime());
+    return {
+      id: file.replace(".md", ""),
+      data,
+    };
+  })
+  .filter(Boolean);
+
+const sortedMovies = movies.sort(
+  (a, b) =>
+    new Date(b?.data?.date || 0).getTime() -
+    new Date(a?.data?.date || 0).getTime(),
+);
 ---
+
 <Layout title="Фильмы" description="Список фильмов с рейтингом.">
   <Container>
     <BackToPrevious />
-    
-    <div class="prose prose-lg dark:prose-invert max-w-none mt-10">
+
+    <div class="prose prose-lg mt-10 max-w-none dark:prose-invert">
       <h1>Любимые фильмы</h1>
     </div>
-    
-    <p class="text-lg text-gray-600 dark:text-gray-400 mb-12">
+
+    <p class="mb-12 text-lg text-gray-600 dark:text-gray-400">
       Фильмы, которые меня впечатлили.
     </p>
     <!-- Movies List -->
-    <div class="space-y-1">
-      {sortedMovies.map((movie) => {
-        return (
-          <a
-            href={`/movies/${movie?.id || ''}`}
-            class="block group no-underline"
-          >
-            <div class="flex items-center justify-between gap-4 py-2 px-3 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-              <div class="flex items-center gap-3 flex-1 min-w-0">
-                <h3 class="font-medium text-black dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
-                  {movie?.data?.title || 'Untitled'}
-                </h3>
-                <span class="text-xs text-gray-500 dark:text-gray-400">({movie?.data?.year || 'Unknown Year'})</span>
-              </div>
-              <div class="flex items-center gap-2 font-medium text-gray-500 dark:text-gray-400 flex-shrink-0">
-                <span class="group-hover:hidden">
-                  {new Date(movie?.data?.date || '').toLocaleDateString('ru-RU')}
-                </span>
-                <span class="hidden group-hover:inline text-blue-600 dark:text-blue-400">
-                  Больше о фильме
-                </span>
-                <span class="flex items-center ml-2">
-                  {Array.from({ length: 5 }).map((_, i) => {
-                    return (
-                      <span
-                        class={`text-sm ${i < (movie?.data?.rating || 0) ? 'text-black dark:text-white' : 'text-gray-300 dark:text-gray-600'}`}
-                      >
-                        ★
-                      </span>
-                    );
-                  })}
-                </span>
-              </div>
-            </div>
-          </a>
-        );
-      })}
+
+    <div class="space-y-4">
+      {
+        sortedMovies.map((movie) => {
+          const rating = movie?.data?.rating || 0;
+          const stars = "★".repeat(rating);
+          return (
+            <ArrowCard
+              title={movie?.data?.title}
+              href={`/movies/${movie?.id}`}
+              date={stars}
+            />
+          );
+        })
+      }
     </div>
   </Container>
 </Layout>

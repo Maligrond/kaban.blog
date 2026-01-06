@@ -2,94 +2,80 @@
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
 import BackToPrevious from "@components/BackToPrevious.astro";
-import fs from 'fs';
-import path from 'path';
+import ArrowCard from "@components/ArrowCard.astro";
+import fs from "fs";
+import path from "path";
 
 // Dynamically load books from markdown files
-const booksDir = path.join(process.cwd(), 'src/content/books');
-const files = fs.readdirSync(booksDir).filter(file => file.endsWith('.md'));
+const booksDir = path.join(process.cwd(), "src/content/books");
+const files = fs.readdirSync(booksDir).filter((file) => file.endsWith(".md"));
 
-const books = files.map(file => {
-  const filePath = path.join(booksDir, file);
-  const content = fs.readFileSync(filePath, 'utf-8');
-  
-  // Parse frontmatter
-  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!frontmatterMatch) return null;
-  
-  const frontmatter = frontmatterMatch[1];
-  const data: any = {};
-  
-  // Simple frontmatter parser
-  frontmatter.split('\n').forEach(line => {
-    const match = line.match(/^(\w+):\s*(.+)$/);
-    if (match) {
-      const [, key, value] = match;
-      if (key === 'rating') {
-        data[key] = parseInt(value);
-      } else {
-        data[key] = value.replace(/^["']|["']$/g, ''); // Remove quotes
+const books = files
+  .map((file) => {
+    const filePath = path.join(booksDir, file);
+    const content = fs.readFileSync(filePath, "utf-8");
+
+    // Parse frontmatter
+    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+    if (!frontmatterMatch) return null;
+
+    const frontmatter = frontmatterMatch[1];
+    const data: any = {};
+
+    // Simple frontmatter parser
+    frontmatter.split("\n").forEach((line) => {
+      const match = line.match(/^(\w+):\s*(.+)$/);
+      if (match) {
+        const [, key, value] = match;
+        if (key === "rating") {
+          data[key] = parseInt(value);
+        } else {
+          data[key] = value.replace(/^["']|["']$/g, ""); // Remove quotes
+        }
       }
-    }
-  });
-  
-  return {
-    id: file.replace('.md', ''),
-    data
-  };
-}).filter(Boolean);
+    });
 
-const sortedBooks = books.sort((a, b) => new Date(b?.data?.date || 0).getTime() - new Date(a?.data?.date || 0).getTime());
+    return {
+      id: file.replace(".md", ""),
+      data,
+    };
+  })
+  .filter(Boolean);
+
+const sortedBooks = books.sort(
+  (a, b) =>
+    new Date(b?.data?.date || 0).getTime() -
+    new Date(a?.data?.date || 0).getTime(),
+);
 ---
+
 <Layout title="Книги" description="Список книг с рейтингом.">
   <Container>
     <BackToPrevious />
-    
-    <div class="prose prose-lg dark:prose-invert max-w-none mt-10">
+
+    <div class="prose prose-lg mt-10 max-w-none dark:prose-invert">
       <h1>Книги</h1>
     </div>
-    
-    <p class="text-lg text-gray-600 dark:text-gray-400 mb-12">
+
+    <p class="mb-12 text-lg text-gray-600 dark:text-gray-400">
       Здесь я делюсь книгами, которые прочитал и считаю достойными внимания.
     </p>
     <!-- Books List -->
-    <div class="space-y-1">
-      {sortedBooks.map((book) => {
-        return (
-          <a
-            href={`/books/${book?.id || ''}`}
-            class="block group no-underline"
-          >
-            <div class="flex items-center justify-between gap-4 py-2 px-3 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-              <div class="flex items-center gap-3 flex-1 min-w-0">
-                <h3 class="font-medium text-black dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
-                  {book?.data?.title || 'Untitled'}
-                </h3>
-                <span class="text-xs text-gray-500 dark:text-gray-400">{book?.data?.author || 'Unknown Author'}</span>
-              </div>
-              <div class="flex items-center gap-2 font-medium text-gray-500 dark:text-gray-400 flex-shrink-0">
-                <span class="group-hover:hidden">
-                  {new Date(book?.data?.date || '').toLocaleDateString('ru-RU')}
-                </span>
-                <span class="hidden group-hover:inline text-blue-600 dark:text-blue-400">
-                  Больше о книге
-                </span>
-                <span class="flex items-center ml-2">
-                  {Array.from({ length: 5 }).map((_, i) => {
-                    return (
-                      <span
-                        class={`text-sm ${i < (book?.data?.rating || 0) ? 'text-black dark:text-white' : 'text-gray-300 dark:text-gray-600'}`}
-                      >
-                        ★
-                      </span>
-                    );
-                  })}
-                </span>
-              </div>
-            </div>
-          </a>
-        );
-      })}
+
+    <div class="space-y-4">
+      {
+        sortedBooks.map((book) => {
+          const rating = book?.data?.rating || 0;
+          const stars = "★".repeat(rating);
+          return (
+            <ArrowCard
+              title={book?.data?.title}
+              href={`/books/${book?.id}`}
+              date={stars}
+            />
+          );
+        })
+      }
     </div>
   </Container>
 </Layout>
