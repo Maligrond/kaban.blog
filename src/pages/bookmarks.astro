@@ -4,13 +4,23 @@ import Container from "@components/Container.astro";
 
 import { getEntry } from "astro:content";
 
+interface Bookmark {
+  title: string;
+  url: string;
+  description?: string;
+  date: string;
+  tags?: string[];
+}
+
 // Fetch bookmarks from content collection (single file "items")
-const entry = await getEntry("bookmarks", "items");
-const bookmarks = entry?.data.items || [];
+// @ts-ignore
+const entry = (await getEntry("bookmarks", "items")) as any;
+const bookmarks = (entry?.data.items || []) as Bookmark[];
 
 // Sort by date (newest first)
 const sortedBookmarks = bookmarks.sort(
-  (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  (a: Bookmark, b: Bookmark) =>
+    new Date(b.date).getTime() - new Date(a.date).getTime(),
 );
 ---
 
