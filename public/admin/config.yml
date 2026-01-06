@@ -133,7 +133,7 @@ collections:
     files:
       - name: items
         label: "Все закладки"
-        file: "src/content/bookmarks/items.md"
+        file: "src/content/bookmarks/items.yaml"
         fields:
           - label: "Закладки"
             name: "items"
