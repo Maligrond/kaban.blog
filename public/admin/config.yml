@@ -1,93 +1,128 @@
+# Decap CMS Configuration for kaban.blog
+# Optimized for GitHub Pages
+
 backend:
   name: github
-  repo: Maligrond/astro-micro-new  # ЗАМЕНИТЕ на ваш username/repo
+  repo: Maligrond/astro-micro-new
   branch: main
-  base_url: https://api.netlify.com
-  auth_endpoint: auth
+  # Use Sveltia authenticator for faster auth (works with Decap too)
+  base_url: https://sveltia-cms-auth.kaban.workers.dev
 
-site_url: /
+# Disable editorial workflow for faster saves (direct commits)
+# publish_mode: editorial_workflow
+
+site_url: https://kaban.blog
 logo_url: /favicon.svg
+
+# Media settings
 media_folder: "public/uploads"
 public_folder: "/uploads"
 
-publish_mode: editorial_workflow
+# Slug settings - use clean URLs
+slug:
+  encoding: "unicode"
+  clean_accents: true
+  sanitize_replacement: "-"
+
+# Performance: limit preview styles
+show_preview_links: false
 
 collections:
+  # Blog Posts
   - name: blog
-    label: Blog Posts
+    label: "📝 Блог"
+    label_singular: "Пост"
     folder: "src/content/blog"
     create: true
     slug: "{{slug}}"
     path: "{{slug}}/index"
     extension: "md"
     format: "frontmatter"
-    nested:
-      depth: 100
+    sortable_fields: ['date', 'title']
+    view_filters:
+      - label: Черновики
+        field: draft
+        pattern: true
+      - label: Опубликованные
+        field: draft
+        pattern: false
     fields:
-      - { label: Title, name: title, widget: string }
-      - { label: Description, name: description, widget: text }
-      - { label: Date, name: date, widget: datetime, format: "YYYY-MM-DD" }
-      - { label: Draft, name: draft, widget: boolean, default: false, required: false }
-      - { label: Tags, name: tags, widget: list, default: [] }
-      - { label: Body, name: body, widget: markdown }
+      - { label: "Заголовок", name: "title", widget: "string", required: true }
+      - { label: "Описание", name: "description", widget: "text", required: true }
+      - { label: "Дата", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
+      - { label: "Черновик", name: "draft", widget: "boolean", default: false, required: false }
+      - { label: "Теги", name: "tags", widget: "list", default: [], required: false }
+      - { label: "Текст", name: "body", widget: "markdown" }
 
+  # Books
   - name: books
-    label: Books
+    label: "📚 Книги"
+    label_singular: "Книга"
     folder: "src/content/books"
     create: true
     slug: "{{slug}}"
     extension: "md"
     format: "frontmatter"
+    sortable_fields: ['date', 'rating', 'title']
     fields:
-      - { label: Title, name: title, widget: string }
-      - { label: Author, name: author, widget: string }
-      - { label: Date, name: date, widget: datetime, format: "YYYY-MM-DD" }
-      - { label: Rating (1-5), name: rating, widget: number, min: 1, max: 5, step: 1 }
-      - { label: External URL, name: url, widget: string, required: false }
-      - { label: Body, name: body, widget: markdown, required: false }
+      - { label: "Название", name: "title", widget: "string", required: true }
+      - { label: "Автор", name: "author", widget: "string", required: true }
+      - { label: "Дата прочтения", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
+      - { label: "Оценка", name: "rating", widget: "number", value_type: "int", min: 1, max: 5, step: 1, required: true }
+      - { label: "Ссылка", name: "url", widget: "string", required: false }
+      - { label: "Заметки", name: "body", widget: "markdown", required: false }
 
+  # Games
   - name: games
-    label: Games
+    label: "🎮 Игры"
+    label_singular: "Игра"
     folder: "src/content/games"
     create: true
     slug: "{{slug}}"
     extension: "md"
     format: "frontmatter"
+    sortable_fields: ['date', 'rating', 'year']
     fields:
-      - { label: Title, name: title, widget: string }
-      - { label: Year, name: year, widget: number }
-      - { label: Date, name: date, widget: datetime, format: "YYYY-MM-DD" }
-      - { label: Rating (1-5), name: rating, widget: number, min: 1, max: 5, step: 1 }
-      - { label: External URL, name: url, widget: string, required: false }
-      - { label: Body, name: body, widget: markdown, required: false }
+      - { label: "Название", name: "title", widget: "string", required: true }
+      - { label: "Год выхода", name: "year", widget: "number", value_type: "int", required: true }
+      - { label: "Дата", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
+      - { label: "Оценка", name: "rating", widget: "number", value_type: "int", min: 1, max: 5, step: 1, required: true }
+      - { label: "Ссылка", name: "url", widget: "string", required: false }
+      - { label: "Заметки", name: "body", widget: "markdown", required: false }
 
+  # Movies
   - name: movies
-    label: Movies
+    label: "🎬 Фильмы"
+    label_singular: "Фильм"
     folder: "src/content/movies"
     create: true
     slug: "{{slug}}"
     extension: "md"
     format: "frontmatter"
+    sortable_fields: ['date', 'rating', 'year']
     fields:
-      - { label: Title, name: title, widget: string }
-      - { label: Year, name: year, widget: number }
-      - { label: Date, name: date, widget: datetime, format: "YYYY-MM-DD" }
-      - { label: Rating (1-5), name: rating, widget: number, min: 1, max: 5, step: 1 }
-      - { label: External URL, name: url, widget: string, required: false }
-      - { label: Body, name: body, widget: markdown, required: false }
+      - { label: "Название", name: "title", widget: "string", required: true }
+      - { label: "Год выхода", name: "year", widget: "number", value_type: "int", required: true }
+      - { label: "Дата просмотра", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
+      - { label: "Оценка", name: "rating", widget: "number", value_type: "int", min: 1, max: 5, step: 1, required: true }
+      - { label: "Ссылка", name: "url", widget: "string", required: false }
+      - { label: "Заметки", name: "body", widget: "markdown", required: false }
 
+  # Countries
   - name: countries
-    label: Countries
+    label: "🌍 Страны"
+    label_singular: "Страна"
     folder: "src/content/countries"
     create: true
     slug: "{{slug}}"
     extension: "md"
     format: "frontmatter"
+    sortable_fields: ['date', 'rating', 'title']
     fields:
-      - { label: Title, name: title, widget: string }
-      - { label: Country, name: country, widget: string }
-      - { label: Date, name: date, widget: datetime, format: "YYYY-MM-DD" }
-      - { label: Rating (1-5), name: rating, widget: number, min: 1, max: 5, step: 1 }
-      - { label: Flag (image path or emoji), name: flag, widget: string }
-      - { label: Favorite, name: favorite, widget: boolean, required: false }
-      - { label: Body, name: body, widget: markdown, required: false }
+      - { label: "Название", name: "title", widget: "string", required: true }
+      - { label: "Страна (код)", name: "country", widget: "string", required: true }
+      - { label: "Дата поездки", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
+      - { label: "Оценка", name: "rating", widget: "number", value_type: "int", min: 1, max: 5, step: 1, required: true }
+      - { label: "Флаг (эмодзи)", name: "flag", widget: "string", required: true }
+      - { label: "Избранное", name: "favorite", widget: "boolean", required: false }
+      - { label: "Заметки", name: "body", widget: "markdown", required: false }
