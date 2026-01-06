@@ -8,6 +8,9 @@ backend:
   # Use Sveltia authenticator for faster auth (works with Decap too)
   base_url: https://sveltia-cms-auth.kaban.workers.dev
 
+# Allow direct local editing when running npx decap-server
+local_backend: true
+
 # Disable editorial workflow for faster saves (direct commits)
 # publish_mode: editorial_workflow
 
