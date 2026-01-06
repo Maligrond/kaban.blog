@@ -1,0 +1,361 @@
+---
+import Layout from "@layouts/Layout.astro";
+import Container from "@components/Container.astro";
+import fs from "fs";
+import path from "path";
+
+// Dynamically load cities from markdown files
+const countriesDir = path.join(process.cwd(), "src/content/countries");
+const files = fs
+    .readdirSync(countriesDir)
+    .filter((file) => file.endsWith(".md"));
+
+interface CityData {
+    id: string;
+    data: {
+        title: string;
+        country: string;
+        date: string;
+        rating: number;
+        flag: string;
+        favorite?: boolean;
+    };
+}
+
+const cities: CityData[] = files
+    .map((file) => {
+        const filePath = path.join(countriesDir, file);
+        const content = fs.readFileSync(filePath, "utf-8");
+        const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+
+        if (!frontmatterMatch) return null;
+
+        const frontmatter = frontmatterMatch[1];
+        const data: Record<string, any> = {};
+        const frontmatterLines = frontmatter.split("\n");
+
+        for (const line of frontmatterLines) {
+            const [key, ...valueParts] = line.split(":");
+            if (key && valueParts.length > 0) {
+                const value = valueParts.join(":").trim();
+                if (key === "rating") {
+                    data[key] = parseInt(value);
+                } else if (key === "favorite") {
+                    data[key] = value === "true";
+                } else {
+                    data[key] = value.replace(/^["']|["']$/g, "");
+                }
+            }
+        }
+
+        return {
+            id: file.replace(".md", ""),
+            data,
+        };
+    })
+    .filter(Boolean) as CityData[];
+
+// Sort cities alphabetically by Russian title
+const sortedCities = cities.sort((a, b) =>
+    a.data.title.localeCompare(b.data.title, "ru"),
+);
+
+// Get unique countries with counts
+const countryStats = cities.reduce(
+    (acc, city) => {
+        const country = city.data.country;
+        if (!acc[country]) {
+            acc[country] = {
+                count: 0,
+                flag: city.data.flag,
+                cities: [] as CityData[],
+            };
+        }
+        acc[country].count++;
+        acc[country].cities.push(city);
+        return acc;
+    },
+    {} as Record<string, { count: number; flag: string; cities: CityData[] }>,
+);
+
+const countriesSorted = Object.entries(countryStats).sort((a, b) =>
+    a[0].localeCompare(b[0], "ru"),
+);
+
+// Get favorites
+const favorites = cities
+    .filter((city) => city.data.favorite || city.data.rating === 5)
+    .sort((a, b) => a.data.title.localeCompare(b.data.title, "ru"));
+
+const totalCities = cities.length;
+const totalCountries = Object.keys(countryStats).length;
+
+// Group cities by first letter
+const cityGroups = sortedCities.reduce(
+    (acc, city) => {
+        const firstLetter = city.data.title.charAt(0).toUpperCase();
+        if (!acc[firstLetter]) {
+            acc[firstLetter] = [];
+        }
+        acc[firstLetter].push(city);
+        return acc;
+    },
+    {} as Record<string, CityData[]>,
+);
+
+const letterGroups = Object.entries(cityGroups).sort((a, b) =>
+    a[0].localeCompare(b[0], "ru"),
+);
+---
+
+<Layout title="Мир" description="Города и страны, которые я посетил">
+    <Container>
+        <div class="world-section">
+            <!-- Header -->
+            <h1>Мир</h1>
+
+            <!-- Cities and Countries Section -->
+            <section>
+                <h2>Города и страны</h2>
+                <ul class="city-grid">
+                    {
+                        letterGroups.map(([letter, letterCities]) => (
+                            <li>
+                                {letterCities.map((city, i) => (
+                                    <span>
+                                        <a
+                                            href={`/countries/${city.id}`}
+                                            class="city-link"
+                                        >
+                                            {city.data.title}
+                                        </a>
+                                        {i < letterCities.length - 1
+                                            ? "\u00a0· "
+                                            : ""}
+                                    </span>
+                                ))}
+                            </li>
+                        ))
+                    }
+                </ul>
+            </section>
+
+            <!-- Favorite Places -->
+            {
+                favorites.length > 0 && (
+                    <section>
+                        <h2>Избранное</h2>
+                        <div class="city-grid">
+                            {favorites.map((city) => (
+                                <span class="city-item">
+                                    <a
+                                        href={`/countries/${city.id}`}
+                                        class="city-link"
+                                    >
+                                        {city.data.title}
+                                    </a>
+                                </span>
+                            ))}
+                        </div>
+                    </section>
+                )
+            }
+
+            <!-- By Country -->
+            <section>
+                <h2>По странам</h2>
+                <div class="country-list">
+                    {
+                        countriesSorted.map(([countryName, data]) => (
+                            <div class="country-block">
+                                <a
+                                    href={`/world/${countryName.toLowerCase().replace(/\s+/g, "-")}`}
+                                    class="country-link"
+                                >
+                                    <span class="country-flag">
+                                        {data.flag}
+                                    </span>{" "}
+                                    {countryName}
+                                </a>
+                                <span class="country-count">
+                                    ({data.count})
+                                </span>
+                            </div>
+                        ))
+                    }
+                </div>
+            </section>
+
+            <!-- Stats -->
+            <p class="stats">
+                Всего: {totalCities} городов в {totalCountries} странах
+            </p>
+        </div>
+    </Container>
+</Layout>
+
+<style>
+    .world-section {
+        font-size: 16px;
+        line-height: 1.6;
+    }
+
+    h1 {
+        font-size: 32px;
+        font-weight: 700;
+        margin: 0 0 24px 0;
+        color: #000;
+    }
+
+    :global(.dark) h1 {
+        color: #fff;
+    }
+
+    h2 {
+        font-size: 20px;
+        font-weight: 600;
+        margin: 32px 0 12px 0;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        color: #000;
+    }
+
+    :global(.dark) h2 {
+        color: #fff;
+        border-bottom-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Main city grid - CSS columns like Birman */
+    .city-grid {
+        column-count: 4;
+        column-gap: 40px;
+        line-height: 1.5;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .city-grid li {
+        break-inside: avoid;
+        margin-bottom: 8px;
+    }
+
+    @media (max-width: 900px) {
+        .city-grid {
+            column-count: 3;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .city-grid {
+            column-count: 2;
+            column-gap: 24px;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .city-grid {
+            column-count: 1;
+        }
+    }
+
+    .city-link {
+        color: #0060a0;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(0, 96, 160, 0.2);
+        transition:
+            border-color 0.15s ease-out,
+            color 0.15s ease-out;
+        white-space: nowrap;
+    }
+
+    .city-link:hover {
+        color: #004070;
+        border-bottom-color: rgba(0, 96, 160, 0.6);
+    }
+
+    :global(.dark) .city-link {
+        color: #5cacee;
+        border-bottom-color: rgba(92, 172, 238, 0.25);
+    }
+
+    :global(.dark) .city-link:hover {
+        color: #7ec0ff;
+        border-bottom-color: rgba(92, 172, 238, 0.6);
+    }
+
+    /* Country list */
+    .country-list {
+        column-count: 3;
+        column-gap: 40px;
+        line-height: 1.8;
+    }
+
+    @media (max-width: 640px) {
+        .country-list {
+            column-count: 2;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .country-list {
+            column-count: 1;
+        }
+    }
+
+    .country-block {
+        break-inside: avoid;
+        margin-bottom: 2px;
+    }
+
+    .country-link {
+        color: #0060a0;
+        text-decoration: none;
+        border-bottom: 1px solid rgba(0, 96, 160, 0.2);
+        transition:
+            border-color 0.15s ease-out,
+            color 0.15s ease-out;
+    }
+
+    .country-link:hover {
+        color: #004070;
+        border-bottom-color: rgba(0, 96, 160, 0.6);
+    }
+
+    :global(.dark) .country-link {
+        color: #5cacee;
+        border-bottom-color: rgba(92, 172, 238, 0.25);
+    }
+
+    :global(.dark) .country-link:hover {
+        color: #7ec0ff;
+        border-bottom-color: rgba(92, 172, 238, 0.6);
+    }
+
+    .country-flag {
+        margin-right: 2px;
+    }
+
+    .country-count {
+        color: #999;
+        font-size: 14px;
+        margin-left: 4px;
+    }
+
+    :global(.dark) .country-count {
+        color: #666;
+    }
+
+    .stats {
+        margin-top: 32px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        color: #666;
+        font-size: 14px;
+    }
+
+    :global(.dark) .stats {
+        border-top-color: rgba(255, 255, 255, 0.1);
+        color: #888;
+    }
+</style>

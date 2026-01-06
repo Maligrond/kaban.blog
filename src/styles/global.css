@@ -49,9 +49,13 @@ article {
   @apply prose-blockquote:font-serif prose-blockquote:border-neutral-300 prose-blockquote:dark:border-neutral-700;
   @apply prose-li:font-serif;
   @apply prose-img:rounded-lg;
+  /* Tighter spacing like Birman */
+  @apply prose-p:my-3 prose-headings:mt-6 prose-headings:mb-2;
+  @apply prose-h1:mt-0 prose-h2:mt-5 prose-h3:mt-4;
+  @apply prose-ul:my-3 prose-ol:my-3 prose-li:my-0;
   font-family: Georgia, Lora, serif;
-  font-size: 1.25rem;
-  line-height: 1.8;
+  font-size: 1.1rem;
+  line-height: 1.65;
 }
 
 @layer utilities {
@@ -65,6 +69,38 @@ article {
     @apply text-black dark:text-white;
     @apply decoration-black/50 dark:decoration-white/50;
   }
+}
+
+/* Override prose spacing to be tighter like Birman */
+.prose h1 {
+  margin-top: 0 !important;
+  margin-bottom: 0.75em !important;
+}
+
+.prose h2 {
+  margin-top: 1.25em !important;
+  margin-bottom: 0.5em !important;
+}
+
+.prose h3 {
+  margin-top: 1em !important;
+  margin-bottom: 0.4em !important;
+}
+
+.prose p {
+  margin-top: 0 !important;
+  margin-bottom: 0.75em !important;
+}
+
+.prose ul,
+.prose ol {
+  margin-top: 0.5em !important;
+  margin-bottom: 0.75em !important;
+}
+
+.prose li {
+  margin-top: 0.1em !important;
+  margin-bottom: 0.1em !important;
 }
 
 .animate {
