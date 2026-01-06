@@ -54,4 +54,15 @@ const countries = defineCollection({
   }),
 });
 
-export const collections = { blog, books, games, movies, countries };
+const bookmarks = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    url: z.string(),
+    description: z.string().optional(),
+    date: z.string(),
+    tags: z.array(z.string()).optional(),
+  }),
+});
+
+export const collections = { blog, books, games, movies, countries, bookmarks };

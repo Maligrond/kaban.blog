@@ -129,3 +129,21 @@ collections:
       - { label: "Флаг (эмодзи)", name: "flag", widget: "string", required: true }
       - { label: "Избранное", name: "favorite", widget: "boolean", required: false }
       - { label: "Заметки", name: "body", widget: "markdown", required: false }
+
+  # Bookmarks
+  - name: bookmarks
+    label: "🔖 Закладки"
+    label_singular: "Закладка"
+    folder: "src/content/bookmarks"
+    create: true
+    slug: "{{slug}}"
+    extension: "md"
+    format: "frontmatter"
+    sortable_fields: ['date', 'title']
+    fields:
+      - { label: "Название", name: "title", widget: "string", required: true }
+      - { label: "URL", name: "url", widget: "string", required: true }
+      - { label: "Описание", name: "description", widget: "text", required: false }
+      - { label: "Дата добавления", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
+      - { label: "Теги", name: "tags", widget: "list", default: [], required: false }
+      - { label: "Заметки", name: "body", widget: "markdown", required: false }
