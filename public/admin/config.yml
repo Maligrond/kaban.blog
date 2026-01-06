@@ -128,12 +128,12 @@ collections:
       - { label: "Заметки", name: "body", widget: "markdown", required: false }
 
   # Bookmarks
-  - name: bookmarks
+  - name: bookmarkItems
     label: "🔖 Закладки"
     files:
       - name: items
         label: "Все закладки"
-        file: "src/content/bookmarks/items.yaml"
+        file: "src/content/bookmarkItems/items.json"
         fields:
           - label: "Закладки"
             name: "items"

@@ -1,4 +1,5 @@
 import { defineCollection, z } from "astro:content";
+// Re-trigger content sync
 
 const blog = defineCollection({
   schema: z.object({
@@ -54,7 +55,7 @@ const countries = defineCollection({
   }),
 });
 
-const bookmarks = defineCollection({
+const bookmarkItems = defineCollection({
   type: 'data',
   schema: z.object({
     items: z.array(z.object({
@@ -67,4 +68,4 @@ const bookmarks = defineCollection({
   }),
 });
 
-export const collections = { blog, books, games, movies, countries, bookmarks };
+export const collections = { blog, books, games, movies, countries, bookmarkItems };

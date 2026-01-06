@@ -2,8 +2,6 @@
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
 
-import { getEntry } from "astro:content";
-
 interface Bookmark {
   title: string;
   url: string;
@@ -14,8 +12,13 @@ interface Bookmark {
 
 // Fetch bookmarks from content collection (single file "items")
 // @ts-ignore
-const entry = (await getEntry("bookmarks", "items")) as any;
-const bookmarks = (entry?.data.items || []) as Bookmark[];
+import { getEntry, getCollection } from "astro:content";
+
+// @ts-ignore
+import bookmarksData from "../content/bookmarkItems/items.json";
+
+// @ts-ignore
+const bookmarks = (bookmarksData?.items || []) as Bookmark[];
 
 // Sort by date (newest first)
 const sortedBookmarks = bookmarks.sort(
