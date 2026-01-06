@@ -2,7 +2,7 @@
 title: Почему Cyberpunk 2077 лучшая игра человечества
 description: Мое неподкупное мнение
 date: 2025-02-15
-draft: true
+draft: false
 tags:
   - игры
 ---
