@@ -6,7 +6,6 @@ rating: 5
 url: "https://store.steampowered.com/app/1091500/Cyberpunk_2077/"
 ---
 
-# Мои впечатления об игре "Cyberpunk 2077"
 
 Невероятная игра с потрясающим миром и атмосферой.
 

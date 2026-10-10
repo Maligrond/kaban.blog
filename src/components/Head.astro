@@ -11,11 +11,12 @@ interface Props {
   title: string;
   description: string;
   image?: string;
+  disableTransitions?: boolean;
 }
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
-const { title, description, image = "/blog-placeholder-1.jpg" } = Astro.props;
+const { title, description, image = "/android-chrome-512x512.png", disableTransitions = false } = Astro.props;
 ---
 
 <!-- Global Metadata -->
@@ -28,6 +29,8 @@ const { title, description, image = "/blog-placeholder-1.jpg" } = Astro.props;
 <link rel="shortcut icon" href="/favicon.ico" />
 <meta name="generator" content={Astro.generator} />
 
+{Astro.url.pathname === "/author/" && <meta name="robots" content="noindex, nofollow" />}
+
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />
 
@@ -38,216 +41,87 @@ const { title, description, image = "/blog-placeholder-1.jpg" } = Astro.props;
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website" />
-<meta property="og:url" content={Astro.url} />
+<meta property="og:url" content={canonicalURL} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
-<meta property="og:image" content={new URL(image, Astro.url)} />
+<meta property="og:image" content={new URL(image, canonicalURL)} />
 
 <!-- Twitter -->
 <meta property="twitter:card" content="summary_large_image" />
-<meta property="twitter:url" content={Astro.url} />
+<meta property="twitter:url" content={canonicalURL} />
 <meta property="twitter:title" content={title} />
 <meta property="twitter:description" content={description} />
-<meta property="twitter:image" content={new URL(image, Astro.url)} />
+<meta property="twitter:image" content={new URL(image, canonicalURL)} />
 
 <!-- PageFind -->
-<link href="/pagefind/pagefind-ui.css" rel="stylesheet" />
-<script is:inline src="/pagefind/pagefind-ui.js"></script>
+<link rel="alternate" type="application/rss+xml" title="Блог Кабана" href="/rss.xml" />
 
-<ClientRouter />
+{!disableTransitions && <ClientRouter />}
 
 <script is:inline>
+  // Apply the saved theme before the first paint; storage can be unavailable.
+  (() => {
+    let theme = "system";
+    try { theme = localStorage.getItem("theme") || "system"; } catch {}
+    document.documentElement.classList.toggle("dark", theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches));
+  })();
+</script>
+<script>
+  const media = window.matchMedia("(prefers-color-scheme: dark)");
+  function savedTheme() {
+    try { return localStorage.getItem("theme") || "system"; } catch { return "system"; }
+  }
+  function applyTheme() {
+    const theme = savedTheme();
+    const dark = theme === "dark" || (theme === "system" && media.matches);
+    document.documentElement.classList.toggle("dark", dark);
+    for (const name of ["light", "dark", "system"]) {
+      const button = document.getElementById(`${name}-theme-button`);
+      button?.classList.toggle("bg-black/5", name === theme);
+      button?.classList.toggle("dark:bg-white/5", name === theme);
+      button?.setAttribute("aria-pressed", String(name === theme));
+    }
+    document.querySelector<HTMLIFrameElement>(".giscus-frame")?.contentWindow?.postMessage({ giscus: { setConfig: { theme: dark ? "dark" : "light" } } }, "https://giscus.app");
+  }
+  function onScroll() { document.documentElement.classList.toggle("scrolled", window.scrollY > 0); }
   function init() {
-    preloadTheme();
+    applyTheme();
     onScroll();
-    animate();
-    updateThemeButtons();
-    addCopyCodeButtons();
-    setGiscusTheme();
-
-    const backToTop = document.getElementById("back-to-top");
-    backToTop?.addEventListener("click", (event) => scrollToTop(event));
-
-    const backToPrev = document.getElementById("back-to-prev");
-    backToPrev?.addEventListener("click", () => window.history.back());
-
-    const lightThemeButton = document.getElementById("light-theme-button");
-    lightThemeButton?.addEventListener("click", () => {
-      localStorage.setItem("theme", "light");
-      toggleTheme(false);
-      updateThemeButtons();
-    });
-
-    const darkThemeButton = document.getElementById("dark-theme-button");
-    darkThemeButton?.addEventListener("click", () => {
-      localStorage.setItem("theme", "dark");
-      toggleTheme(true);
-      updateThemeButtons();
-    });
-
-    const systemThemeButton = document.getElementById("system-theme-button");
-    systemThemeButton?.addEventListener("click", () => {
-      localStorage.setItem("theme", "system");
-      toggleTheme(window.matchMedia("(prefers-color-scheme: dark)").matches);
-      updateThemeButtons();
-    });
-
-    window
-      .matchMedia("(prefers-color-scheme: dark)")
-      .addEventListener("change", (event) => {
-        if (localStorage.theme === "system") {
-          toggleTheme(event.matches);
-        }
+    document.querySelectorAll(".animate").forEach((element) => element.classList.add("show"));
+    document.querySelectorAll("pre").forEach((block) => {
+      if (block.querySelector(".copy-code")) return;
+      block.style.position = "relative";
+      block.tabIndex = 0;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "copy-code";
+      button.textContent = "📋";
+      button.setAttribute("aria-label", "Скопировать код");
+      button.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(block.querySelector("code")?.textContent || "");
+          button.textContent = "✅";
+        } catch { button.textContent = "Не удалось скопировать"; }
+        setTimeout(() => { button.textContent = "📋"; }, 2000);
       });
-
-    document.addEventListener("scroll", onScroll);
-  }
-
-  function updateThemeButtons() {
-    const theme = localStorage.getItem("theme");
-    const lightThemeButton = document.getElementById("light-theme-button");
-    const darkThemeButton = document.getElementById("dark-theme-button");
-    const systemThemeButton = document.getElementById("system-theme-button");
-
-    function removeActiveButtonTheme(button) {
-      button?.classList.remove("bg-black/5");
-      button?.classList.remove("dark:bg-white/5");
-    }
-
-    function addActiveButtonTheme(button) {
-      button?.classList.add("bg-black/5");
-      button?.classList.add("dark:bg-white/5");
-    }
-
-    removeActiveButtonTheme(lightThemeButton);
-    removeActiveButtonTheme(darkThemeButton);
-    removeActiveButtonTheme(systemThemeButton);
-
-    if (theme === "light") {
-      addActiveButtonTheme(lightThemeButton);
-    } else if (theme === "dark") {
-      addActiveButtonTheme(darkThemeButton);
-    } else {
-      addActiveButtonTheme(systemThemeButton);
-    }
-  }
-
-  function animate() {
-    const animateElements = document.querySelectorAll(".animate");
-
-    animateElements.forEach((element, index) => {
-      setTimeout(() => {
-        element.classList.add("show");
-      }, index * 100);
+      block.append(button);
     });
   }
-
-  function onScroll() {
-    if (window.scrollY > 0) {
-      document.documentElement.classList.add("scrolled");
-    } else {
-      document.documentElement.classList.remove("scrolled");
+  document.addEventListener("click", (event) => {
+    if (!(event.target instanceof Element)) return;
+    for (const theme of ["light", "dark", "system"]) {
+      if (event.target.closest(`#${theme}-theme-button`)) {
+        try { localStorage.setItem("theme", theme); } catch {}
+        applyTheme();
+      }
     }
-  }
-
-  function scrollToTop(event) {
-    event.preventDefault();
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  }
-
-  function toggleTheme(dark) {
-    const css = document.createElement("style");
-
-    css.appendChild(
-      document.createTextNode(
-        `* {
-             -webkit-transition: none !important;
-             -moz-transition: none !important;
-             -o-transition: none !important;
-             -ms-transition: none !important;
-             transition: none !important;
-          }
-        `,
-      ),
-    );
-
-    document.head.appendChild(css);
-
-    if (dark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
+    if (event.target.closest("#back-to-top")) {
+      event.preventDefault();
+      window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
     }
-
-    window.getComputedStyle(css).opacity;
-    document.head.removeChild(css);
-
-    setGiscusTheme();
-  }
-
-  function preloadTheme() {
-    const userTheme = localStorage.theme;
-
-    if (userTheme === "light" || userTheme === "dark") {
-      toggleTheme(userTheme === "dark");
-    } else {
-      toggleTheme(window.matchMedia("(prefers-color-scheme: dark)").matches);
-    }
-  }
-
-  function addCopyCodeButtons() {
-    let copyButtonLabel = "📋";
-    let codeBlocks = Array.from(document.querySelectorAll("pre"));
-
-    async function copyCode(codeBlock, copyButton) {
-      const codeText = codeBlock.innerText;
-      const buttonText = copyButton.innerText;
-      const textToCopy = codeText.replace(buttonText, "");
-
-      await navigator.clipboard.writeText(textToCopy);
-      copyButton.innerText = "✅";
-
-      setTimeout(() => {
-        copyButton.innerText = copyButtonLabel;
-      }, 2000);
-    }
-
-    for (let codeBlock of codeBlocks) {
-      const wrapper = document.createElement("div");
-      wrapper.style.position = "relative";
-
-      const copyButton = document.createElement("button");
-      copyButton.innerText = copyButtonLabel;
-      copyButton.classList = "copy-code";
-
-      codeBlock.setAttribute("tabindex", "0");
-      codeBlock.appendChild(copyButton);
-
-      codeBlock.parentNode.insertBefore(wrapper, codeBlock);
-      wrapper.appendChild(codeBlock);
-
-      copyButton?.addEventListener("click", async () => {
-        await copyCode(codeBlock, copyButton);
-      });
-    }
-  }
-
-  const setGiscusTheme = () => {
-    const giscus = document.querySelector(".giscus-frame");
-
-    const isDark = document.documentElement.classList.contains("dark");
-
-    if (giscus) {
-      const url = new URL(giscus.src);
-      url.searchParams.set("theme", isDark ? "dark" : "light");
-      giscus.src = url.toString();
-    }
-  };
-
-  document.addEventListener("DOMContentLoaded", () => init());
-  document.addEventListener("astro:after-swap", () => init());
-  preloadTheme();
+  });
+  media.addEventListener("change", applyTheme);
+  document.addEventListener("scroll", onScroll, { passive: true });
+  document.addEventListener("astro:page-load", init);
+  init();
 </script>

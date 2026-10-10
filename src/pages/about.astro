@@ -1,0 +1,35 @@
+---
+import Layout from "@layouts/Layout.astro";
+import Container from "@components/Container.astro";
+import { SOCIALS, SITE } from "@consts";
+---
+<Layout title="Обо мне" description="Немного информации обо мне">
+  <Container>
+    <div class="journal-page-heading">
+      <p class="eyebrow">Личное</p>
+      <h1>Обо мне<span class="accent-dot">.</span></h1>
+      <p class="journal-page-intro about-greeting">всем ку</p>
+    </div>
+    <div class="journal-columns">
+      <section aria-labelledby="shelves-heading">
+        <div class="section-caption"><h2 id="shelves-heading">Мои подборки</h2></div>
+        <div class="personal-directory">
+          <a href="/about/books/"><span>Книги</span><span aria-hidden="true">↗</span></a>
+          <a href="/about/games/"><span>Игры</span><span aria-hidden="true">↗</span></a>
+          <a href="/about/movies/"><span>Фильмы</span><span aria-hidden="true">↗</span></a>
+          <a href="/about/music/"><span>Музыка</span><span aria-hidden="true">↗</span></a>
+        </div>
+      </section>
+      <aside class="journal-aside personal-aside">
+        <h2 class="eyebrow">Ещё здесь</h2>
+        <a href="/world/">Мир<span>Места и поездки</span></a>
+        <a href="/bookmarks/">Закладки<span>Ссылки на память</span></a>
+        <div class="aside-contacts">
+          <h2 class="eyebrow">На связи</h2>
+          {SOCIALS.map(social => <a href={social.HREF} target="_blank" rel="noopener noreferrer">{social.NAME} ↗</a>)}
+          {SITE.EMAIL && <a href={`mailto:${SITE.EMAIL}`}>Почта ↗</a>}
+        </div>
+      </aside>
+    </div>
+  </Container>
+</Layout>

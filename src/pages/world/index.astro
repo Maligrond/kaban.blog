@@ -1,361 +1,120 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-import fs from "fs";
-import path from "path";
+import FormattedDate from "@components/FormattedDate.astro";
+import NotePreview from "@components/NotePreview.astro";
+import { getCollection } from "astro:content";
+import { Image } from "astro:assets";
 
-// Dynamically load cities from markdown files
-const countriesDir = path.join(process.cwd(), "src/content/countries");
-const files = fs
-    .readdirSync(countriesDir)
-    .filter((file) => file.endsWith(".md"));
+const cities = (await getCollection("countries")).filter(city => !city.data.draft);
+const countries = [...new Set(cities.map(city => city.data.country))];
+const countryHref = (name: string) => `/world/${name.toLowerCase().replace(/\s+/g, "-")}/`;
+const photoPlaces = cities.filter(city => city.data.photo)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()).slice(0, 3);
+const favorites = cities.filter(city => city.data.favorite)
+  .sort((a, b) => a.data.title.localeCompare(b.data.title, "ru")).slice(0, 8);
 
-interface CityData {
-    id: string;
-    data: {
-        title: string;
-        country: string;
-        date: string;
-        rating: number;
-        flag: string;
-        favorite?: boolean;
-    };
+// Country and city names share one alphabet. Identically named places lead
+// to the country page, which includes the city's link (e.g. Monaco).
+const places = new Map<string, { title: string; href: string; country: boolean }>();
+for (const name of countries) places.set(name.toLocaleLowerCase("ru"), { title: name, href: countryHref(name), country: true });
+for (const city of cities) {
+  const key = city.data.title.toLocaleLowerCase("ru");
+  if (!places.has(key)) places.set(key, { title: city.data.title, href: `/countries/${city.id}/`, country: false });
 }
-
-const cities: CityData[] = files
-    .map((file) => {
-        const filePath = path.join(countriesDir, file);
-        const content = fs.readFileSync(filePath, "utf-8");
-        const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-
-        if (!frontmatterMatch) return null;
-
-        const frontmatter = frontmatterMatch[1];
-        const data: Record<string, any> = {};
-        const frontmatterLines = frontmatter.split("\n");
-
-        for (const line of frontmatterLines) {
-            const [key, ...valueParts] = line.split(":");
-            if (key && valueParts.length > 0) {
-                const value = valueParts.join(":").trim();
-                if (key === "rating") {
-                    data[key] = parseInt(value);
-                } else if (key === "favorite") {
-                    data[key] = value === "true";
-                } else {
-                    data[key] = value.replace(/^["']|["']$/g, "");
-                }
-            }
-        }
-
-        return {
-            id: file.replace(".md", ""),
-            data,
-        };
-    })
-    .filter(Boolean) as CityData[];
-
-// Sort cities alphabetically by Russian title
-const sortedCities = cities.sort((a, b) =>
-    a.data.title.localeCompare(b.data.title, "ru"),
-);
-
-// Get unique countries with counts
-const countryStats = cities.reduce(
-    (acc, city) => {
-        const country = city.data.country;
-        if (!acc[country]) {
-            acc[country] = {
-                count: 0,
-                flag: city.data.flag,
-                cities: [] as CityData[],
-            };
-        }
-        acc[country].count++;
-        acc[country].cities.push(city);
-        return acc;
-    },
-    {} as Record<string, { count: number; flag: string; cities: CityData[] }>,
-);
-
-const countriesSorted = Object.entries(countryStats).sort((a, b) =>
-    a[0].localeCompare(b[0], "ru"),
-);
-
-// Get favorites
-const favorites = cities
-    .filter((city) => city.data.favorite || city.data.rating === 5)
-    .sort((a, b) => a.data.title.localeCompare(b.data.title, "ru"));
-
-const totalCities = cities.length;
-const totalCountries = Object.keys(countryStats).length;
-
-// Group cities by first letter
-const cityGroups = sortedCities.reduce(
-    (acc, city) => {
-        const firstLetter = city.data.title.charAt(0).toUpperCase();
-        if (!acc[firstLetter]) {
-            acc[firstLetter] = [];
-        }
-        acc[firstLetter].push(city);
-        return acc;
-    },
-    {} as Record<string, CityData[]>,
-);
-
-const letterGroups = Object.entries(cityGroups).sort((a, b) =>
-    a[0].localeCompare(b[0], "ru"),
-);
+const sorted = [...places.values()].sort((a, b) => a.title.localeCompare(b.title, "ru"));
+const groups = Object.groupBy(sorted, place => place.title.charAt(0).toUpperCase());
+const stories = (await getCollection("blog")).filter(post => !post.data.draft &&
+  (post.data.cities.length > 0 || post.data.tags?.some(tag => ["мир", "путешествия", "поездки"].includes(tag.toLowerCase()))))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 ---
-
-<Layout title="Мир" description="Города и страны, которые я посетил">
-    <Container>
-        <div class="world-section">
-            <!-- Header -->
-            <h1>Мир</h1>
-
-            <!-- Cities and Countries Section -->
-            <section>
-                <h2>Города и страны</h2>
-                <ul class="city-grid">
-                    {
-                        letterGroups.map(([letter, letterCities]) => (
-                            <li>
-                                {letterCities.map((city, i) => (
-                                    <span>
-                                        <a
-                                            href={`/countries/${city.id}`}
-                                            class="city-link"
-                                        >
-                                            {city.data.title}
-                                        </a>
-                                        {i < letterCities.length - 1
-                                            ? "\u00a0· "
-                                            : ""}
-                                    </span>
-                                ))}
-                            </li>
-                        ))
-                    }
-                </ul>
-            </section>
-
-            <!-- Favorite Places -->
-            {
-                favorites.length > 0 && (
-                    <section>
-                        <h2>Избранное</h2>
-                        <div class="city-grid">
-                            {favorites.map((city) => (
-                                <span class="city-item">
-                                    <a
-                                        href={`/countries/${city.id}`}
-                                        class="city-link"
-                                    >
-                                        {city.data.title}
-                                    </a>
-                                </span>
-                            ))}
-                        </div>
-                    </section>
-                )
-            }
-
-            <!-- By Country -->
-            <section>
-                <h2>По странам</h2>
-                <div class="country-list">
-                    {
-                        countriesSorted.map(([countryName, data]) => (
-                            <div class="country-block">
-                                <a
-                                    href={`/world/${countryName.toLowerCase().replace(/\s+/g, "-")}`}
-                                    class="country-link"
-                                >
-                                    <span class="country-flag">
-                                        {data.flag}
-                                    </span>{" "}
-                                    {countryName}
-                                </a>
-                                <span class="country-count">
-                                    ({data.count})
-                                </span>
-                            </div>
-                        ))
-                    }
-                </div>
-            </section>
-
-            <!-- Stats -->
-            <p class="stats">
-                Всего: {totalCities} городов в {totalCountries} странах
-            </p>
+<Layout title="Мир" description="Мои поездки, фотографии, города и страны">
+  <Container>
+    <div class="world-page">
+      <div class="journal-page-heading">
+        <h1>Мир<span class="accent-dot">.</span></h1>
+        <p class="journal-page-intro">Места, в которых я побывал, и истории из поездок.</p>
+      </div>
+      {photoPlaces.length > 0 && <section class="world-photos" aria-labelledby="world-photos-heading">
+        <h2 id="world-photos-heading">Из поездок</h2>
+        <div class="world-photo-grid">
+          {photoPlaces.map((city, index) => <a class:list={["world-photo-place", { "world-photo-lead": index === 0 }]} href={`/countries/${city.id}/`}>
+            {city.data.photo && <Image src={city.data.photo} alt={city.data.photoAlt || city.data.title}
+              widths={[400, 800, 1200]} sizes={index === 0 ? "(max-width: 640px) calc(100vw - 40px), (max-width: 900px) 50vw, 530px" : "(max-width: 640px) calc(50vw - 28px), 265px"}
+              loading={index === 0 ? "eager" : "lazy"} />}
+            <h3>{city.data.title}</h3>
+            <div class="world-place-meta"><span>{city.data.country}</span>{" "}<FormattedDate date={city.data.date} compact /></div>
+          </a>)}
         </div>
-    </Container>
+      </section>}
+      <div class="world-summary">
+        <span>Городов: {cities.length} <span aria-hidden="true">·</span> Стран: {countries.length}</span>
+        <a href="/about/countries/">Все города с оценками ↗</a>
+      </div>
+      <div class="world-directory-layout">
+        <section class="world-directory" aria-labelledby="world-directory-heading">
+          <h2 id="world-directory-heading">Города и страны</h2>
+          <dl>
+            {Object.entries(groups).map(([letter, entries]) => <div class="world-alphabet-row">
+              <dt>{letter}</dt>
+              <dd>{entries?.map((place, index) => <>
+                {index > 0 && <span class="world-separator" aria-hidden="true"> · </span>}
+                <a class:list={{ "world-country": place.country }} href={place.href}>{place.title}</a>
+              </>)}</dd>
+            </div>)}
+          </dl>
+        </section>
+        {favorites.length > 0 && <aside class="world-favorites" aria-labelledby="world-favorites-heading">
+          <h2 id="world-favorites-heading">Любимые места</h2>
+          <ul>{favorites.map(city => <li><a href={`/countries/${city.id}/`}>{city.data.title}</a></li>)}</ul>
+        </aside>}
+      </div>
+      {stories.length > 0 && <section class="world-stories" aria-labelledby="world-stories-heading" data-pagefind-ignore>
+        <h2 id="world-stories-heading">Рассказы о поездках</h2>
+        {stories.map(post => <NotePreview post={post} />)}
+      </section>}
+    </div>
+  </Container>
 </Layout>
 
 <style>
-    .world-section {
-        font-size: 16px;
-        line-height: 1.6;
-    }
-
-    h1 {
-        font-size: 32px;
-        font-weight: 700;
-        margin: 0 0 24px 0;
-        color: #000;
-    }
-
-    :global(.dark) h1 {
-        color: #fff;
-    }
-
-    h2 {
-        font-size: 20px;
-        font-weight: 600;
-        margin: 32px 0 12px 0;
-        padding-bottom: 8px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        color: #000;
-    }
-
-    :global(.dark) h2 {
-        color: #fff;
-        border-bottom-color: rgba(255, 255, 255, 0.1);
-    }
-
-    /* Main city grid - CSS columns like Birman */
-    .city-grid {
-        column-count: 4;
-        column-gap: 40px;
-        line-height: 1.5;
-        list-style: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    .city-grid li {
-        break-inside: avoid;
-        margin-bottom: 8px;
-    }
-
-    @media (max-width: 900px) {
-        .city-grid {
-            column-count: 3;
-        }
-    }
-
-    @media (max-width: 640px) {
-        .city-grid {
-            column-count: 2;
-            column-gap: 24px;
-        }
-    }
-
-    @media (max-width: 400px) {
-        .city-grid {
-            column-count: 1;
-        }
-    }
-
-    .city-link {
-        color: #0060a0;
-        text-decoration: none;
-        border-bottom: 1px solid rgba(0, 96, 160, 0.2);
-        transition:
-            border-color 0.15s ease-out,
-            color 0.15s ease-out;
-        white-space: nowrap;
-    }
-
-    .city-link:hover {
-        color: #004070;
-        border-bottom-color: rgba(0, 96, 160, 0.6);
-    }
-
-    :global(.dark) .city-link {
-        color: #5cacee;
-        border-bottom-color: rgba(92, 172, 238, 0.25);
-    }
-
-    :global(.dark) .city-link:hover {
-        color: #7ec0ff;
-        border-bottom-color: rgba(92, 172, 238, 0.6);
-    }
-
-    /* Country list */
-    .country-list {
-        column-count: 3;
-        column-gap: 40px;
-        line-height: 1.8;
-    }
-
-    @media (max-width: 640px) {
-        .country-list {
-            column-count: 2;
-        }
-    }
-
-    @media (max-width: 400px) {
-        .country-list {
-            column-count: 1;
-        }
-    }
-
-    .country-block {
-        break-inside: avoid;
-        margin-bottom: 2px;
-    }
-
-    .country-link {
-        color: #0060a0;
-        text-decoration: none;
-        border-bottom: 1px solid rgba(0, 96, 160, 0.2);
-        transition:
-            border-color 0.15s ease-out,
-            color 0.15s ease-out;
-    }
-
-    .country-link:hover {
-        color: #004070;
-        border-bottom-color: rgba(0, 96, 160, 0.6);
-    }
-
-    :global(.dark) .country-link {
-        color: #5cacee;
-        border-bottom-color: rgba(92, 172, 238, 0.25);
-    }
-
-    :global(.dark) .country-link:hover {
-        color: #7ec0ff;
-        border-bottom-color: rgba(92, 172, 238, 0.6);
-    }
-
-    .country-flag {
-        margin-right: 2px;
-    }
-
-    .country-count {
-        color: #999;
-        font-size: 14px;
-        margin-left: 4px;
-    }
-
-    :global(.dark) .country-count {
-        color: #666;
-    }
-
-    .stats {
-        margin-top: 32px;
-        padding-top: 16px;
-        border-top: 1px solid rgba(0, 0, 0, 0.1);
-        color: #666;
-        font-size: 14px;
-    }
-
-    :global(.dark) .stats {
-        border-top-color: rgba(255, 255, 255, 0.1);
-        color: #888;
-    }
+  .world-page :is(section, aside) > h2 { font-size: 22px; font-weight: 700; line-height: 1.3; margin-bottom: 12px; letter-spacing: -.02em; }
+  .world-photo-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; align-items: start; }
+  .world-photo-place { min-width: 0; }
+  .world-photo-place img { display: block; width: 100%; height: clamp(180px, 22vw, 250px); object-fit: cover; }
+  .world-photo-place h3 { margin: 8px 0 0; font-size: 24px; font-weight: 700; line-height: 1.15; letter-spacing: -.02em; }
+  .world-place-meta { display: flex; flex-wrap: wrap; gap: 0 10px; margin-top: 2px; color: var(--journal-muted); font: 14px/1.35 "PT Sans", sans-serif; }
+  .world-place-meta time { white-space: nowrap; }
+  .world-page a:hover { color: var(--journal-accent); }
+  .world-summary { display: flex; flex-wrap: wrap; gap: 6px 22px; padding-block: 12px; margin-top: 16px; border-block: 1px solid var(--journal-rule); font-size: 14px; color: var(--journal-muted); }
+  .world-summary > span > span { margin-inline: 8px; }
+  .world-summary a { color: var(--journal-accent); }
+  .world-directory-layout { display: grid; grid-template-columns: minmax(0, 760px) minmax(160px, 1fr); gap: 40px; margin-top: 20px; }
+  .world-alphabet-row { display: grid; grid-template-columns: 20px minmax(0, 1fr); column-gap: 12px; margin-bottom: 6px; }
+  .world-alphabet-row dt { padding-top: 5px; font-size: 13px; color: var(--journal-muted); }
+  .world-alphabet-row dd { font-size: 18px; line-height: 1.65; }
+  .world-alphabet-row a { display: inline-block; max-width: 100%; overflow-wrap: anywhere; }
+  .world-country { color: var(--journal-accent); }
+  .world-separator { color: var(--journal-muted); }
+  .world-directory a:hover, .world-favorites a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .world-favorites ul { font-size: 18px; line-height: 1.8; }
+  .world-favorites li + li { margin-top: 3px; }
+  .world-stories { max-width: 760px; margin-top: 32px; border-top: 1px solid var(--journal-rule); padding-top: 20px; }
+  @media (max-width: 900px) {
+    .world-directory-layout { gap: 32px; }
+    .world-photo-place:not(.world-photo-lead) .world-place-meta { display: block; }
+    .world-photo-place:not(.world-photo-lead) .world-place-meta time { display: block; }
+  }
+  @media (max-width: 640px) {
+    .world-photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .world-photo-place img { height: auto; aspect-ratio: 4 / 3; }
+    .world-photo-lead { grid-column: 1 / -1; }
+    .world-photo-lead img { aspect-ratio: 16 / 9; }
+    .world-photo-place h3 { font-size: 21px; }
+    .world-photo-lead h3 { font-size: 25px; }
+    .world-alphabet-row dd { line-height: 1.85; }
+    .world-directory-layout { grid-template-columns: minmax(0, 1fr); gap: 30px; }
+    .world-favorites ul { display: flex; flex-wrap: wrap; gap: 4px 22px; }
+    .world-favorites li + li { margin-top: 0; }
+  }
 </style>

@@ -3,9 +3,9 @@ import { type CollectionEntry, getCollection, render } from "astro:content";
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
 import FormattedDate from "@components/FormattedDate.astro";
-import PostNavigation from "@components/PostNavigation.astro";
 import Giscus from "@components/Giscus.astro";
 import RelatedPosts from "@components/RelatedPosts.astro";
+import PhotoViewer from "@components/PhotoViewer.astro";
 
 export async function getStaticPaths() {
   const posts = (await getCollection("blog"))
@@ -22,81 +22,42 @@ const posts = (await getCollection("blog"))
   .filter((post) => !post.data.draft)
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
-function getNextPost() {
-  let postIndex;
-  for (const post of posts) {
-    if (post.id === Astro.params.id) {
-      postIndex = posts.indexOf(post);
-      return posts[postIndex + 1];
-    }
-  }
-}
-
-function getPrevPost() {
-  let postIndex;
-  for (const post of posts) {
-    if (post.id === Astro.params.id) {
-      postIndex = posts.indexOf(post);
-      return posts[postIndex - 1];
-    }
-  }
-}
-
-const nextPost = getNextPost();
-const prevPost = getPrevPost();
-
 const post = Astro.props;
-const { Content, headings } = await render(post);
+const allCities = await getCollection("countries");
+const cities = post.data.cities
+  .map(reference => allCities.find(city => city.id === reference.id))
+  .filter((city): city is CollectionEntry<"countries"> => !!city && !city.data.draft);
+const { Content } = await render(post);
 ---
 
-<Layout title={post.data.title} description={post.data.description}>
+<Layout title={post.data.title} description={post.data.description} image={post.data.previewImage || post.data.cover?.src}>
   <Container>
-    <div class="mb-8">
-      <h1
-        class="animate font-sans font-semibold text-neutral-900 dark:text-neutral-100"
-        style="font-size: 3.75rem; line-height: 1.15;"
-      >
-        {post.data.title}
-      </h1>
+    <div class="post-heading blog-post-heading" data-author-path={`src/content/blog/${post.id}/index.md`}>
+      <a class="back-to-notes" href="/blog/">← Все записи</a>
+      <h1>{post.data.title}</h1>
+      <div class="note-meta"><FormattedDate date={post.data.date} compact /></div>
     </div>
-    <article class="animate">
-      <Content />
-      <div
-        class="mt-16 border-t border-neutral-200 pt-8 dark:border-neutral-800"
-      >
-        <div
-          class="flex flex-wrap items-center gap-4 text-sm text-neutral-600 dark:text-neutral-400"
-        >
-          <FormattedDate date={post.data.date} />
-          {
-            post.data.tags && post.data.tags?.length > 0 && (
-              <div class="flex gap-2">
-                {post.data.tags.map((tag) => (
-                  <a
-                    href={`/tags/${tag}`}
-                    class="rounded border border-black/15 px-2 py-1 text-sm transition-colors duration-300 ease-in-out hover:bg-black/5 hover:text-black focus-visible:bg-black/5 focus-visible:text-black dark:border-white/20 dark:hover:bg-white/5 dark:hover:text-white dark:focus-visible:bg-white/5 dark:focus-visible:text-white"
-                  >
-                    {tag}
-                  </a>
-                ))}
-              </div>
-            )
-          }
-        </div>
+    <article class="post-content blog-post-content">
+      <div class="post-photo-content"><Content /></div>
+      {cities.length > 0 && <p class="place-connections not-prose">
+        <span>Города из этой истории: </span>
+        {cities.map((city, index) => <>{index > 0 && " · "}<a href={`/countries/${city.id}/`}>{city.data.title}</a></>)}
+      </p>}
+      <div id="post-meta" class="post-details post-meta-strip not-prose" aria-label="Дата и темы записи">
+        <FormattedDate date={post.data.date} compact />
+        {post.data.tags && post.data.tags.length > 0 && <ul class="post-tags" aria-label="Темы записи">
+          {post.data.tags.map(tag => <li><a href={`/tags/${encodeURIComponent(tag)}/`} class="post-tag">{tag}</a></li>)}
+        </ul>}
       </div>
-      <div class="mt-16">
-        <RelatedPosts
+      <RelatedPosts
           currentPostId={post.id}
           currentTags={post.data.tags || []}
           allPosts={posts}
-        />
-      </div>
-      <div class="mt-24">
-        <PostNavigation prevPost={prevPost} nextPost={nextPost} />
-      </div>
-      <div class="mt-24">
+      />
+      <div class="post-extras">
         <Giscus />
       </div>
     </article>
   </Container>
+  <PhotoViewer />
 </Layout>

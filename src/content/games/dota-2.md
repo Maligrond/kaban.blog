@@ -6,7 +6,6 @@ rating: 5
 url: "https://store.steampowered.com/app/570/Dota_2/"
 ---
 
-# Мои впечатления об игре "Dota 2 (before 7.00)"
 
 Легендарная MOBA, которая определила жанр.
 

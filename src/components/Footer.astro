@@ -11,12 +11,15 @@ import BackToTop from "@components/BackToTop.astro";
         <BackToTop />
       </div>
     </div>
-    <div class="flex items-center justify-between">
-      <div>&copy; {new Date().getFullYear()} • {SITE.TITLE} 🐗</div>
-      <div class="flex flex-wrap items-center gap-1.5">
+    <div class="footer-content">
+      <div class="footer-signature">
+        <span>&copy; {new Date().getFullYear()} • {SITE.TITLE}</span>
+        <a class="footer-author-link" href="/author/" data-astro-reload aria-label="Вход автора через GitHub" title="Вход автора">🐗</a>
+      </div>
+      <div class="theme-controls">
         <button
           id="light-theme-button"
-          aria-label="Light theme"
+          aria-label="Светлая тема" title="Светлая тема"
           class="group flex size-9 items-center justify-center rounded border border-black/15 hover:bg-black/5 focus-visible:bg-black/5 dark:border-white/20 dark:hover:bg-white/5 dark:focus-visible:bg-white/5"
         >
           <svg
@@ -44,7 +47,7 @@ import BackToTop from "@components/BackToTop.astro";
         </button>
         <button
           id="dark-theme-button"
-          aria-label="Dark theme"
+          aria-label="Тёмная тема" title="Тёмная тема"
           class="group flex size-9 items-center justify-center rounded border border-black/15 hover:bg-black/5 focus-visible:bg-black/5 dark:border-white/20 dark:hover:bg-white/5 dark:focus-visible:bg-white/5"
         >
           <svg
@@ -64,7 +67,7 @@ import BackToTop from "@components/BackToTop.astro";
         </button>
         <button
           id="system-theme-button"
-          aria-label="System theme"
+          aria-label="Системная тема" title="Системная тема"
           class="group flex size-9 items-center justify-center rounded border border-black/15 hover:bg-black/5 focus-visible:bg-black/5 dark:border-white/20 dark:hover:bg-white/5 dark:focus-visible:bg-white/5"
         >
           <svg
@@ -88,3 +91,10 @@ import BackToTop from "@components/BackToTop.astro";
     </div>
   </Container>
 </footer>
+
+<style>
+  .footer-signature { display: flex; align-items: center; gap: 6px; }
+  .footer-author-link { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; min-height: 44px; text-decoration: none; opacity: .65; }
+  .footer-author-link:hover, .footer-author-link:focus-visible { opacity: 1; }
+  .footer-author-link:focus-visible { outline: 2px solid var(--journal-accent); outline-offset: 2px; border-radius: 3px; }
+</style>

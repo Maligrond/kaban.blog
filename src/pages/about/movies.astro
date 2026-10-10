@@ -1,80 +1,17 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-import BackToPrevious from "@components/BackToPrevious.astro";
-import ArrowCard from "@components/ArrowCard.astro";
-import fs from "fs";
-import path from "path";
-
-// Dynamically load movies from markdown files
-const moviesDir = path.join(process.cwd(), "src/content/movies");
-const files = fs.readdirSync(moviesDir).filter((file) => file.endsWith(".md"));
-
-const movies = files
-  .map((file) => {
-    const filePath = path.join(moviesDir, file);
-    const content = fs.readFileSync(filePath, "utf-8");
-    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-
-    if (!frontmatterMatch) return null;
-
-    const frontmatter = frontmatterMatch[1];
-    const data: Record<string, any> = {};
-    const frontmatterLines = frontmatter.split("\n");
-
-    for (const line of frontmatterLines) {
-      const [key, ...valueParts] = line.split(":");
-      if (key && valueParts.length > 0) {
-        const value = valueParts.join(":").trim();
-        if (key === "rating" || key === "year") {
-          data[key] = parseInt(value);
-        } else {
-          data[key] = value.replace(/^["']|["']$/g, "");
-        }
-      }
-    }
-
-    return {
-      id: file.replace(".md", ""),
-      data,
-    };
-  })
-  .filter(Boolean);
-
-const sortedMovies = movies.sort(
-  (a, b) =>
-    new Date(b?.data?.date || 0).getTime() -
-    new Date(a?.data?.date || 0).getTime(),
-);
+import ReviewShelf from "@components/ReviewShelf.astro";
+import { getCollection } from "astro:content";
+const entries = (await getCollection("movies")).filter(entry => !entry.data.draft).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf() || a.data.title.localeCompare(b.data.title, "ru"));
 ---
-
-<Layout title="Фильмы" description="Список фильмов с рейтингом.">
+<Layout title="Фильмы" description="Фильмы, которые меня впечатлили.">
   <Container>
-    <BackToPrevious />
-
-    <div class="prose prose-lg mt-10 max-w-none dark:prose-invert">
-      <h1>Любимые фильмы</h1>
+    <div class="journal-page-heading">
+      <a href="/about/" class="back-to-notes">← Обо мне</a>
+      <h1>Фильмы<span class="accent-dot">.</span></h1>
+      <p class="journal-page-intro shelf-intro">Фильмы, которые меня впечатлили.</p>
     </div>
-
-    <p class="mb-12 text-lg text-gray-600 dark:text-gray-400">
-      Фильмы, которые меня впечатлили.
-    </p>
-    <!-- Movies List -->
-
-    <div class="space-y-4">
-      {
-        sortedMovies.map((movie) => {
-          const rating = movie?.data?.rating || 0;
-          const stars = "★".repeat(rating);
-          return (
-            <ArrowCard
-              title={movie?.data?.title}
-              href={`/movies/${movie?.id}`}
-              date={stars}
-            />
-          );
-        })
-      }
-    </div>
+    <ReviewShelf entries={entries} collection="movies" />
   </Container>
 </Layout>

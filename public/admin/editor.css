@@ -1,0 +1,12 @@
+body { margin: 0; background: #fffefa; }
+.editor-bar { position: fixed; top: 0; inset-inline: 0; z-index: 10000; height: 44px; box-sizing: border-box; display: flex; align-items: center; gap: 14px; padding: 0 20px; border-bottom: 1px solid #dedbd6; background: #fffefa; color: #77716a; font: 14px/1.3 system-ui, sans-serif; }
+.editor-bar a { color: #24221f; text-decoration: none; }
+.editor-bar a:first-child { font-size: 19px; font-weight: 700; }
+.editor-bar a:first-child span { color: #a1432c; }
+.editor-bar a:last-child { margin-left: auto; font-size: 13px; }
+#nc-root { padding-top: 44px; }
+#local-notice { position: fixed; inset: auto 0 0; z-index: 10000; padding: 8px 16px; border-top: 1px solid #dedbd6; background: #fffefa; color: #77716a; font: 12px/1.4 system-ui, sans-serif; }
+@media (max-width: 480px) { .editor-bar { padding-inline: 12px; } .editor-bar > span { display: none; } }
+.editing-entry .editor-bar { display: none; }
+.editing-entry #nc-root { padding-top: 0; }
+#nc-root img[alt="Logo"] { width: 80px; height: 80px; object-fit: contain; }

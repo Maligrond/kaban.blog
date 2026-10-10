@@ -1,0 +1,38 @@
+---
+import Layout from "@layouts/Layout.astro";
+import Container from "@components/Container.astro";
+import FormattedDate from "@components/FormattedDate.astro";
+import Rating from "@components/Rating.astro";
+import PhotoViewer from "@components/PhotoViewer.astro";
+interface Props {
+  title: string;
+  description: string;
+  subtitle: string | number;
+  subtitleHref?: string;
+  date: Date;
+  rating: number;
+  backHref: string;
+  backLabel: string;
+  url?: string;
+  sourceLabel?: string;
+  photos?: boolean;
+}
+const { title, description, subtitle, subtitleHref, date, rating, backHref, backLabel, url, sourceLabel = "Источник", photos = false } = Astro.props;
+---
+<Layout title={title} description={description}>
+  <Container>
+    <div class="post-heading review-heading">
+      <a href={backHref} class="back-to-notes">← {backLabel}</a>
+      <h1>{title}</h1>
+      <p class="review-subtitle">{subtitleHref ? <a href={subtitleHref}>{subtitle}</a> : subtitle}</p>
+      <div class="note-meta">
+        <Rating value={rating} />
+        <FormattedDate date={date} />
+        {url && <a href={url} target="_blank" rel="noopener noreferrer">{sourceLabel} ↗</a>}
+      </div>
+    </div>
+    <article class="post-content review-content"><slot /></article>
+    <div class="review-return"><a class="archive-link" href={backHref}><span>{backLabel}</span><span aria-hidden="true">↗</span></a></div>
+  </Container>
+  {photos && <PhotoViewer />}
+</Layout>

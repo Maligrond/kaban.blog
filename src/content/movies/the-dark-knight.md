@@ -6,7 +6,6 @@ rating: 5
 url: "https://www.imdb.com/title/tt0468569/"
 ---
 
-# Мои впечатления о фильме "The Dark Knight"
 
 Лучший фильм о супергероях всех времен.
 

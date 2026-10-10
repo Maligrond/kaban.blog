@@ -1,7 +1,12 @@
 ---
 title: Почему я выбрал Италию
+featured: true
+cover: ./italy.jpg
+coverAlt: Рапалло, Италия
+excerpt: Польша, Канада, США, Германия — и наконец Рапалло. История о поиске своего места.
 description: И конкретно Рапалло
 date: 2025-03-11
+cities: [wroclaw, jasper, new-york, stuttgart, rapallo]
 tags:
   - италия
 ---

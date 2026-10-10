@@ -1,19 +1,14 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-import BackToPrevious from "@components/BackToPrevious.astro";
-import { SITE } from "@consts";
 ---
-
-<Layout title="404" description={SITE.DESCRIPTION}>
+<Layout title="Страница не найдена" description="Такой страницы здесь нет">
   <Container>
-    <div class="mt-16 grid place-items-center gap-3">
-      <h4 class="animate text-2xl font-semibold text-black dark:text-white">
-        404: Page not found
-      </h4>
-      <span class="animate">
-        <BackToPrevious href="/">Go to home page</BackToPrevious>
-      </span>
+    <div class="journal-page-heading">
+      <p class="eyebrow">Страница не найдена</p>
+      <h1>404<span class="accent-dot">.</span></h1>
+      <p class="journal-page-intro">Похоже, эта ссылка ведёт в никуда.</p>
+      <div class="intro-links"><a href="/">На главную ↗</a><a href="/blog/">В блог ↗</a></div>
     </div>
   </Container>
 </Layout>

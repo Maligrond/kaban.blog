@@ -1,15 +1,21 @@
-import { defineCollection, z } from "astro:content";
-import { glob } from 'astro/loaders';
+import { defineCollection, reference } from "astro:content";
+import { z } from "astro/zod";
+import { glob, file } from 'astro/loaders';
 
 const blog = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: "./src/content/blog" }),
-  schema: z.object({
+  schema: ({ image }) => z.object({
     title: z.string(),
     description: z.string(),
     date: z.coerce.date(),
     draft: z.boolean().optional(),
     tags: z.array(z.string()).optional(),
     previewImage: z.string().optional(),
+    featured: z.boolean().default(false),
+    excerpt: z.string().optional(),
+    cover: image().optional(),
+    coverAlt: z.string().optional(),
+    cities: z.array(reference("countries")).default([]),
   }),
 });
 
@@ -40,4 +46,34 @@ const galleries = defineCollection({
     }),
 });
 
-export const collections = { blog, projects, galleries };
+const reviewFields = {
+  title: z.string(),
+  draft: z.boolean().default(false),
+  date: z.coerce.date(),
+  rating: z.number().int().min(1).max(5),
+  url: z.url().optional(),
+};
+const books = defineCollection({
+  loader: glob({ pattern: "*.md", base: "./src/content/books" }),
+  schema: z.object({ ...reviewFields, author: z.string() }),
+});
+const games = defineCollection({
+  loader: glob({ pattern: "*.md", base: "./src/content/games" }),
+  schema: z.object({ ...reviewFields, year: z.number().int() }),
+});
+const movies = defineCollection({
+  loader: glob({ pattern: "*.md", base: "./src/content/movies" }),
+  schema: z.object({ ...reviewFields, year: z.number().int() }),
+});
+const countries = defineCollection({
+  loader: glob({ pattern: "*.md", base: "./src/content/countries" }),
+  schema: ({ image }) => z.object({ ...reviewFields, country: z.string(), flag: z.string(), favorite: z.boolean().default(false), photo: image().optional(), photoAlt: z.string().optional() }),
+});
+const bookmarkItems = defineCollection({
+  loader: file("src/content/bookmarkItems/items.json", {
+    parser: (text) => JSON.parse(text).items.map((item: Record<string, unknown>, index: number) => ({ ...item, id: String(index) })),
+  }),
+  schema: z.object({ title: z.string(), url: z.url(), description: z.string().optional(), date: z.coerce.date(), tags: z.array(z.string()).default([]) }),
+});
+
+export const collections = { blog, projects, galleries, books, games, movies, countries, bookmarkItems };

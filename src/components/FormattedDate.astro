@@ -1,17 +1,17 @@
 ---
 interface Props {
   date: Date;
+  compact?: boolean;
 }
-
-const { date } = Astro.props;
+const { date, compact = false } = Astro.props;
+const formatted = new Intl.DateTimeFormat("ru-RU", {
+  month: "long",
+  day: compact ? "numeric" : "2-digit",
+  year: "numeric",
+  timeZone: "UTC",
+});
+const label = compact
+  ? formatted.formatToParts(date).filter(part => part.type !== "literal" || !part.value.includes("г.")).map(part => part.value).join("").trim()
+  : formatted.format(date);
 ---
-
-<time datetime={date.toISOString()}>
-  {
-    date.toLocaleDateString("ru-RU", {
-      month: "long",
-      day: "2-digit",
-      year: "numeric",
-    })
-  }
-</time>
+<time datetime={date.toISOString()}>{label}</time>

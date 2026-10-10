@@ -1,4 +1,5 @@
 ---
+draft: true
 title: "Astro Nano"
 description: "Minimal portfolio and blog build with astro and no frameworks."
 date: "2024-03-26"

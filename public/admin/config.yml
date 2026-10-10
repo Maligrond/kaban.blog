@@ -1,18 +1,23 @@
 # Decap CMS Configuration for kaban.blog
-# Optimized for GitHub Pages
+# Static Astro site deployed by Netlify
 
 backend:
-  name: git-gateway
+  name: github
+  repo: Maligrond/kaban.blog
+  site_domain: kaban.blog
+  squash_merges: true
   branch: main
 
 # Allow direct local editing when running npx decap-server
 local_backend: true
 
-# Disable editorial workflow for faster saves (direct commits)
-# publish_mode: editorial_workflow
+# Saving drafts creates a branch; publishing merges it into main.
+publish_mode: editorial_workflow
+locale: ru
+display_url: https://kaban.blog
 
 site_url: https://kaban.blog
-logo_url: /favicon.svg
+logo_url: /android-chrome-512x512.png
 
 # Media settings
 media_folder: "public/uploads"
@@ -30,15 +35,18 @@ show_preview_links: false
 collections:
   # Blog Posts
   - name: blog
-    label: "📝 Блог"
-    label_singular: "Пост"
+    label: "Записи"
+    label_singular: "Запись"
     folder: "src/content/blog"
     create: true
     slug: "{{slug}}"
     path: "{{slug}}/index"
     extension: "md"
     format: "frontmatter"
+    summary: "{{title}} · {{date | date('DD.MM.YYYY')}}"
     sortable_fields: ['date', 'title']
+    media_folder: ""
+    public_folder: ""
     view_filters:
       - label: Черновики
         field: draft
@@ -48,11 +56,17 @@ collections:
         pattern: false
     fields:
       - { label: "Заголовок", name: "title", widget: "string", required: true }
-      - { label: "Описание", name: "description", widget: "text", required: true }
+      - { label: "Текст", name: "body", widget: "markdown", hint: "Пиши как в обычном редакторе. Фотографии добавляются через кнопку изображения." }
+      - { label: "Короткое описание", name: "description", widget: "text", required: true, hint: "Одно-два предложения для превью и поисковиков." }
       - { label: "Дата", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
-      - { label: "Черновик", name: "draft", widget: "boolean", default: false, required: false }
+      - { label: "Скрыть с сайта", name: "draft", widget: "boolean", default: false, required: false, hint: "Это отдельный переключатель видимости. Неопубликованные черновики сохраняются кнопкой редактора." }
       - { label: "Теги", name: "tags", widget: "list", default: [], required: false }
-      - { label: "Текст", name: "body", widget: "markdown" }
+      - { label: "Города из записи", name: "cities", widget: "relation", collection: "countries", search_fields: ["title", "country"], value_field: "{{slug}}", display_fields: ["title"], multiple: true, required: false }
+      - { label: "Избранная запись на главной", name: "featured", widget: "boolean", default: false, required: false }
+      - { label: "Текст превью", name: "excerpt", widget: "text", required: false }
+      - { label: "Обложка", name: "cover", widget: "image", required: false, hint: "Сохраняется в папке записи; появится в рекомендациях." }
+      - { label: "Описание обложки", name: "coverAlt", widget: "string", required: false }
+      - { label: "Картинка для ссылки", name: "previewImage", widget: "image", media_folder: "/public/uploads", public_folder: "/uploads", required: false }
 
   # Books
   - name: books
@@ -69,6 +83,7 @@ collections:
       - { label: "Автор", name: "author", widget: "string", required: true }
       - { label: "Дата прочтения", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
       - { label: "Оценка", name: "rating", widget: "number", value_type: "int", min: 1, max: 5, step: 1, required: true }
+      - { label: "Черновик", name: "draft", widget: "boolean", default: false, required: false }
       - { label: "Ссылка", name: "url", widget: "string", required: false }
       - { label: "Заметки", name: "body", widget: "markdown", required: false }
 
@@ -87,6 +102,7 @@ collections:
       - { label: "Год выхода", name: "year", widget: "number", value_type: "int", required: true }
       - { label: "Дата", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
       - { label: "Оценка", name: "rating", widget: "number", value_type: "int", min: 1, max: 5, step: 1, required: true }
+      - { label: "Черновик", name: "draft", widget: "boolean", default: false, required: false }
       - { label: "Ссылка", name: "url", widget: "string", required: false }
       - { label: "Заметки", name: "body", widget: "markdown", required: false }
 
@@ -105,13 +121,14 @@ collections:
       - { label: "Год выхода", name: "year", widget: "number", value_type: "int", required: true }
       - { label: "Дата просмотра", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
       - { label: "Оценка", name: "rating", widget: "number", value_type: "int", min: 1, max: 5, step: 1, required: true }
+      - { label: "Черновик", name: "draft", widget: "boolean", default: false, required: false }
       - { label: "Ссылка", name: "url", widget: "string", required: false }
       - { label: "Заметки", name: "body", widget: "markdown", required: false }
 
   # Countries
   - name: countries
-    label: "🌍 Страны"
-    label_singular: "Страна"
+    label: "🌍 Города"
+    label_singular: "Город"
     folder: "src/content/countries"
     create: true
     slug: "{{slug}}"
@@ -120,9 +137,12 @@ collections:
     sortable_fields: ['date', 'rating', 'title']
     fields:
       - { label: "Название", name: "title", widget: "string", required: true }
-      - { label: "Страна (код)", name: "country", widget: "string", required: true }
+      - { label: "Название страны", name: "country", widget: "string", required: true, hint: "Полное название по-русски, например Германия" }
+      - { label: "Фотография для раздела Мир", name: "photo", widget: "string", required: false, hint: "Путь к фотографии относительно файла города, например ../blog/italy/italy.jpg" }
+      - { label: "Описание фотографии", name: "photoAlt", widget: "string", required: false }
       - { label: "Дата поездки", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
       - { label: "Оценка", name: "rating", widget: "number", value_type: "int", min: 1, max: 5, step: 1, required: true }
+      - { label: "Черновик", name: "draft", widget: "boolean", default: false, required: false }
       - { label: "Флаг (эмодзи)", name: "flag", widget: "string", required: true }
       - { label: "Избранное", name: "favorite", widget: "boolean", required: false }
       - { label: "Заметки", name: "body", widget: "markdown", required: false }

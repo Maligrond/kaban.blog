@@ -1,9 +1,10 @@
 ---
-// No props needed anymore
+interface Props { href?: string; }
+const { href = "/about" } = Astro.props;
 ---
 
-<button
-  onclick="history.back()"
+<a
+  href={href}
   class="not-prose group relative flex w-fit flex-nowrap rounded border border-black/15 py-1.5 pl-7 pr-3 transition-colors duration-300 ease-in-out hover:bg-black/5 hover:text-black focus-visible:bg-black/5 focus-visible:text-black dark:border-white/20 dark:hover:bg-white/5 dark:hover:text-white dark:focus-visible:bg-white/5 dark:focus-visible:text-white"
 >
   <svg
@@ -24,6 +25,6 @@
     ></polyline>
   </svg>
   <div class="text-sm">
-    Назад
+    <slot>Назад</slot>
   </div>
-</button>
+</a>

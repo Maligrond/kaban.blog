@@ -1,0 +1,38 @@
+---
+import type { CollectionEntry } from "astro:content";
+import Rating from "@components/Rating.astro";
+interface Props {
+  entries: (CollectionEntry<"books"> | CollectionEntry<"games"> | CollectionEntry<"movies">)[];
+  collection: "books" | "games" | "movies";
+}
+const { entries, collection } = Astro.props;
+const shelves = [
+  { id: "books", title: "Книги" },
+  { id: "games", title: "Игры" },
+  { id: "movies", title: "Фильмы" },
+];
+---
+<div class="journal-columns">
+  <section aria-label="Список произведений">
+    <div class="section-caption"><span>Сначала новые записи</span><span>Всего: {entries.length}</span></div>
+    <ul class="review-shelf">
+      {entries.map(entry => <li>
+        <a href={`/${collection}/${entry.id}/`} class="review-shelf-link">
+          <div class="review-shelf-info">
+            <h2>{entry.data.title}</h2>
+            <p>{"author" in entry.data ? entry.data.author : entry.data.year}</p>
+          </div>
+          <Rating value={entry.data.rating} />
+          <span class="review-arrow" aria-hidden="true">↗</span>
+        </a>
+      </li>)}
+    </ul>
+    {entries.length === 0 && <p class="journal-page-intro">Здесь пока нет записей.</p>}
+  </section>
+  <aside class="journal-aside shelf-aside">
+    <h2 class="eyebrow">Другие подборки</h2>
+    {shelves.filter(shelf => shelf.id !== collection).map(shelf => <a href={`/about/${shelf.id}/`}>{shelf.title} ↗</a>)}
+    <a href="/about/music/">Музыка ↗</a>
+    <p class="rating-explanation">Оценки — мои личные впечатления, по шкале от 1 до 5.</p>
+  </aside>
+</div>

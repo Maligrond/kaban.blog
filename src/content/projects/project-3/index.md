@@ -1,4 +1,5 @@
 ---
+draft: true
 title: "Astro Micro"
 description: "Astro Micro is an accessible and lightweight blog."
 date: "2024-05-26"

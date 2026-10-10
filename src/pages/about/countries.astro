@@ -1,221 +1,54 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-import BackToPrevious from "@components/BackToPrevious.astro";
-import fs from 'fs';
-import path from 'path';
-
-// Dynamically load countries from markdown files
-const countriesDir = path.join(process.cwd(), 'src/content/countries');
-const files = fs.readdirSync(countriesDir).filter(file => file.endsWith('.md'));
-
-const countries = files.map(file => {
-  const filePath = path.join(countriesDir, file);
-  const content = fs.readFileSync(filePath, 'utf-8');
-  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-  
-  if (!frontmatterMatch) return null;
-  
-  const frontmatter = frontmatterMatch[1];
-  const data: Record<string, any> = {};
-  const frontmatterLines = frontmatter.split('\n');
-  
-  for (const line of frontmatterLines) {
-    const [key, ...valueParts] = line.split(':');
-    if (key && valueParts.length > 0) {
-      const value = valueParts.join(':').trim();
-      if (key === 'rating') {
-        data[key] = parseInt(value);
-      } else {
-        data[key] = value.replace(/^["']|["']$/g, '');
-      }
-    }
-  }
-  
-  return {
-    id: file.replace('.md', ''),
-    data
-  };
-}).filter(Boolean);
-
-const sortedCountries = countries.sort((a, b) => {
-  const countryA = a?.data?.country?.toLowerCase() || '';
-  const countryB = b?.data?.country?.toLowerCase() || '';
-  
-  // First sort by country
-  const countryComparison = countryA.localeCompare(countryB);
-  if (countryComparison !== 0) {
-    return countryComparison;
-  }
-  
-  // Then sort by city name within the same country
-  const titleA = a?.data?.title?.toLowerCase() || '';
-  const titleB = b?.data?.title?.toLowerCase() || '';
-  return titleA.localeCompare(titleB);
-});
-
-// Get unique countries for filter
-const uniqueCountries = [...new Set(countries.map(city => city?.data?.country).filter(Boolean))].sort();
+import Rating from "@components/Rating.astro";
+import { getCollection } from "astro:content";
+const cities = (await getCollection("countries")).filter(entry => !entry.data.draft).sort((a, b) => a.data.country.localeCompare(b.data.country, "ru") || a.data.title.localeCompare(b.data.title, "ru"));
+const countries = [...new Set(cities.map(city => city.data.country))].sort((a, b) => a.localeCompare(b, "ru"));
 ---
-<Layout title="Города" description="Список посещенных городов с рейтингом.">
+<Layout title="Города" description="Города, в которых я побывал, и мои оценки">
   <Container>
-    <BackToPrevious />
-    
-    <div class="prose prose-lg dark:prose-invert max-w-none mt-10">
-      <h1>Посещённые города</h1>
+    <div class="journal-page-heading">
+      <a href="/world/" class="back-to-notes">← Мир</a>
+      <h1>Города<span class="accent-dot">.</span></h1>
+      <p class="journal-page-intro">Места, в которых я побывал, и мои впечатления.</p>
     </div>
-    
-    <p class="text-lg text-gray-600 dark:text-gray-400 mb-8">
-      Города, в которых я побывал.
-    </p>
-
-    <!-- Filter Toggle Button -->
-    <div class="mb-8">
-      <button
-        onclick="toggleFilters()"
-        class="px-3 py-2 text-sm rounded border border-black/15 bg-white hover:bg-black/5 dark:border-white/20 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 transition-colors"
-      >
-        <span class="mr-2">🌍</span>
-        Фильтр по странам
-      </button>
-      
-      <!-- Country Flag Filters (Hidden by default) -->
-      <div id="country-filters" class="hidden mt-4">
-        <div class="flex flex-wrap gap-2">
-          <button
-            onclick="filterByCountry('')"
-            class="country-filter active px-3 py-2 text-sm rounded border border-black/15 bg-black/5 text-black hover:bg-black/10 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 transition-colors"
-            data-country=""
-          >
-            Все
-          </button>
-          <button
-            onclick="filterByFavorites()"
-            class="favorite-filter px-3 py-2 text-lg rounded border border-black/15 bg-white hover:bg-black/5 dark:border-white/20 dark:bg-white/5 dark:hover:bg-white/10 transition-colors"
-            title="Любимые города"
-          >
-            ★
-          </button>
-          {uniqueCountries.map((countryName) => {
-            const countryCity = countries.find(city => city?.data?.country === countryName);
-            return countryCity ? (
-              <button
-                onclick={`filterByCountry('${countryName}')`}
-                class="country-filter px-3 py-2 text-lg rounded border border-black/15 bg-white hover:bg-black/5 dark:border-white/20 dark:bg-white/5 dark:hover:bg-white/10 transition-colors"
-                data-country={countryName}
-                title={countryName}
-              >
-                {countryCity.data?.flag}
-              </button>
-            ) : null;
-          })}
-        </div>
-      </div>
-    </div>
-
-    <!-- Countries List -->
-    <div class="space-y-1">
-      {sortedCountries.map((country) => {
-        return (
-          <a
-            href={`/countries/${country?.id || ''}`}
-            class="city-item block group no-underline"
-            data-country={country?.data?.country}
-            data-favorite={country?.data?.favorite ? 'true' : 'false'}
-          >
-            <div class="flex items-center justify-between gap-4 py-2 px-3 rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-              <div class="flex items-center gap-3 flex-1 min-w-0">
-                <span class="text-xl">{country?.data?.flag || '🏙️'}</span>
-                <h3 class="font-medium text-black dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
-                  {country?.data?.title || 'Untitled'}
-                </h3>
-                <span class="text-xs text-gray-500 dark:text-gray-400">({country?.data?.country || 'Unknown Country'})</span>
-              </div>
-              <div class="flex items-center gap-2 font-medium text-gray-500 dark:text-gray-400 flex-shrink-0">
-                {country?.data?.favorite && (
-                  <span class="text-yellow-500 text-lg">★</span>
-                )}
-                <span class="hidden group-hover:inline text-blue-600 dark:text-blue-400">
-                  Больше о городе
-                </span>
-              </div>
-            </div>
-          </a>
-        );
-      })}
-    </div>
-
-    <script is:inline>
-      function toggleFilters() {
-        const filtersDiv = document.getElementById('country-filters');
-        if (filtersDiv) {
-          filtersDiv.classList.toggle('hidden');
-        }
-      }
-
-      function filterByCountry(selectedCountry) {
-        const cityItems = document.querySelectorAll('.city-item');
-        const filterButtons = document.querySelectorAll('.country-filter');
-        const favoriteButton = document.querySelector('.favorite-filter');
-        
-        // Reset favorite filter
-        favoriteButton.classList.remove('active', 'bg-black/5', 'dark:bg-white/10');
-        favoriteButton.classList.add('bg-white', 'dark:bg-white/5');
-        
-        // Update button states
-        filterButtons.forEach(button => {
-          const buttonCountry = button.getAttribute('data-country') || '';
-          if (buttonCountry === selectedCountry) {
-            button.classList.add('active');
-            button.classList.remove('bg-white', 'dark:bg-white/5');
-            button.classList.add('bg-black/5', 'dark:bg-white/10');
-          } else {
-            button.classList.remove('active');
-            button.classList.remove('bg-black/5', 'dark:bg-white/10');
-            button.classList.add('bg-white', 'dark:bg-white/5');
-          }
-        });
-        
-        // Filter cities
-        cityItems.forEach(item => {
-          const itemCountry = item.getAttribute('data-country') || '';
-          
-          if (selectedCountry === '' || itemCountry === selectedCountry) {
-            item.style.display = 'block';
-          } else {
-            item.style.display = 'none';
-          }
-        });
-      }
-
-      function filterByFavorites() {
-        const cityItems = document.querySelectorAll('.city-item');
-        const filterButtons = document.querySelectorAll('.country-filter');
-        const favoriteButton = document.querySelector('.favorite-filter');
-        
-        // Reset country filters
-        filterButtons.forEach(button => {
-          button.classList.remove('active', 'bg-black/5', 'dark:bg-white/10');
-          button.classList.add('bg-white', 'dark:bg-white/5');
-        });
-        
-        // Activate favorite filter
-        favoriteButton.classList.add('active');
-        favoriteButton.classList.remove('bg-white', 'dark:bg-white/5');
-        favoriteButton.classList.add('bg-black/5', 'dark:bg-white/10');
-        
-        // Filter cities
-        cityItems.forEach(item => {
-          const isFavorite = item.getAttribute('data-favorite') === 'true';
-          
-          if (isFavorite) {
-            item.style.display = 'block';
-          } else {
-            item.style.display = 'none';
-          }
-        });
-      }
-    </script>
-
+    <form id="city-filters" class="city-filters" hidden>
+      <label>Страна<select name="country"><option value="">Все страны</option>{countries.map(country => <option value={country}>{country}</option>)}</select></label>
+      <label class="favorite-control"><input type="checkbox" name="favorites" /> Только избранные</label>
+    </form>
+    <p class="place-stats city-results" aria-live="polite" aria-atomic="true">Городов: {cities.length}</p>
+    <ul class="review-shelf city-review-list" id="city-reviews">
+      {cities.map(city => <li data-country={city.data.country} data-favorite={String(city.data.favorite || city.data.rating === 5)}>
+        <a class="review-shelf-link" href={`/countries/${city.id}/`}>
+          <div class="review-shelf-info"><h2><span aria-hidden="true">{city.data.flag}</span> {city.data.title}</h2><p>{city.data.country}</p></div>
+          <Rating value={city.data.rating} /><span class="review-arrow" aria-hidden="true">↗</span>
+        </a>
+      </li>)}
+    </ul>
+    <p id="city-empty" class="journal-page-intro" hidden>Таких городов пока нет. Попробуй другую страну или отключи фильтр избранного.</p>
   </Container>
 </Layout>
+<script>
+  function updateCities() {
+    const form = document.querySelector<HTMLFormElement>("#city-filters");
+    if (!form) return;
+    form.hidden = false;
+    const country = form.querySelector<HTMLSelectElement>('select[name="country"]')?.value || "";
+    const favorites = form.querySelector<HTMLInputElement>('input[name="favorites"]')?.checked || false;
+    let count = 0;
+    document.querySelectorAll<HTMLElement>("#city-reviews > li").forEach(item => {
+      item.hidden = (country !== "" && item.dataset.country !== country) || (favorites && item.dataset.favorite !== "true");
+      if (!item.hidden) count++;
+    });
+    const results = document.querySelector(".city-results");
+    if (results) results.textContent = `Городов: ${count}`;
+    const empty = document.getElementById("city-empty");
+    if (empty) empty.hidden = count !== 0;
+  }
+  document.addEventListener("change", event => {
+    if (event.target instanceof Element && event.target.closest("#city-filters")) updateCities();
+  });
+  document.addEventListener("astro:page-load", updateCities);
+  updateCities();
+</script>

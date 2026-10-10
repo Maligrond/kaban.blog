@@ -428,23 +428,6 @@ const images = gallery?.data.images ?? [];
 </style>
 
 <script>
-  // Types for better type
-  // This can me moved to an external .ts file.
-  interface LightboxElements {
-    thumbnailButtons: NodeListOf<HTMLButtonElement>;
-    lightboxDialog: HTMLDialogElement | null;
-    prevButton: HTMLButtonElement | null;
-    nextButton: HTMLButtonElement | null;
-    closeButton: HTMLButtonElement | null;
-  }
-
-  interface LightboxState {
-    currentIndex: number;
-    resizeTimeout?: number;
-    closeDuration: number;
-    debug: boolean;
-  }
-
   document.addEventListener("astro:page-load", () => {
     const thumbnailButtons = document.querySelectorAll<HTMLButtonElement>(
       ".thumbnail-button img",

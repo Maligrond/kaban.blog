@@ -19,15 +19,15 @@ const derivedDate = entry ? entry.data.date : date;
   href={derivedHref}
   class="group flex flex-col border-0 bg-transparent px-0 transition-colors duration-200 hover:underline"
 >
-  <span class="flex w-full items-baseline justify-between">
+  <span class="flex w-full flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
     <span
-      class="truncate text-base font-medium text-black decoration-2 underline-offset-2 transition-[text-decoration-thickness] duration-200 group-hover:underline dark:text-white"
+      class="min-w-0 break-words text-base font-medium text-black decoration-2 underline-offset-2 transition-[text-decoration-thickness] duration-200 group-hover:underline dark:text-white"
     >
       {derivedTitle}
     </span>
     {
       derivedDate && (
-        <span class="ml-4 min-w-[120px] flex-shrink-0 text-right text-sm tabular-nums text-gray-500 dark:text-gray-400">
+        <span class=" flex-shrink-0 text-right text-sm tabular-nums text-gray-500 dark:text-gray-400">
           {derivedDate instanceof Date
             ? derivedDate.toLocaleDateString("ru-RU", {
                 day: "2-digit",

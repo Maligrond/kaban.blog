@@ -6,7 +6,6 @@ rating: 5
 url: "https://store.steampowered.com/app/440/Team_Fortress_2/"
 ---
 
-# Мои впечатления об игре "Team Fortress 2"
 
 Классический командный шутер с уникальным стилем.
 

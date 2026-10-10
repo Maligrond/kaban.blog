@@ -1,79 +1,72 @@
 ---
 import type { CollectionEntry } from "astro:content";
-import FormattedDate from "@components/FormattedDate.astro";
+import type { ImageMetadata } from "astro";
+import { Image } from "astro:assets";
 
 type Props = {
-    currentPostId: string;
-    currentTags: string[];
-    allPosts: CollectionEntry<"blog">[];
+  currentPostId: string;
+  currentTags: string[];
+  allPosts: CollectionEntry<"blog">[];
 };
-
 const { currentPostId, currentTags, allPosts } = Astro.props;
+const tags = new Set(currentTags.map(tag => tag.trim().toLocaleLowerCase("ru")));
+const relatedPosts = allPosts
+  .filter(post => post.id !== currentPostId && !post.data.draft)
+  .map(post => ({ post, score: (post.data.tags || []).filter(tag => tags.has(tag.trim().toLocaleLowerCase("ru"))).length }))
+  .filter(item => item.score > 0)
+  .sort((a, b) => b.score - a.score || b.post.data.date.valueOf() - a.post.data.date.valueOf() || a.post.id.localeCompare(b.post.id))
+  .slice(0, 4)
+  .map(item => item.post);
 
-// Найти похожие посты по тегам
-function getRelatedPosts() {
-    if (!currentTags || currentTags.length === 0) {
-        return [];
-    }
-
-    const relatedPosts = allPosts
-        .filter((post) => {
-            // Исключить текущий пост
-            if (post.id === currentPostId) return false;
-            // Проверить есть ли общие теги
-            const postTags = post.data.tags || [];
-            return postTags.some((tag) => currentTags.includes(tag));
-        })
-        .map((post) => {
-            // Посчитать количество совпадающих тегов
-            const postTags = post.data.tags || [];
-            const matchCount = postTags.filter((tag) =>
-                currentTags.includes(tag),
-            ).length;
-            return { post, matchCount };
-        })
-        .sort((a, b) => b.matchCount - a.matchCount)
-        .slice(0, 5)
-        .map((item) => item.post);
-
-    return relatedPosts;
+const images = import.meta.glob<ImageMetadata>("/src/content/blog/**/*.{jpg,jpeg,png,webp,avif}", { eager: true, import: "default" });
+function thumbnail(post: CollectionEntry<"blog">) {
+  if (post.data.cover) return post.data.cover;
+  if (post.data.previewImage) return post.data.previewImage;
+  const match = post.body?.match(/!\[[^\]]*\]\((?:<([^>]+)>|([^\s)]+))/);
+  const source = match?.[1] || match?.[2];
+  if (!source || /^(?:https?:|\/)/.test(source)) return undefined;
+  const path = decodeURIComponent(new URL(source, `https://local.invalid/src/content/blog/${post.id}/`).pathname);
+  return images[path];
 }
-
-const relatedPosts = getRelatedPosts();
 ---
+{relatedPosts.length > 0 && <section class="further-posts post-extras not-prose" aria-labelledby="related-heading">
+  <h2 id="related-heading">Дальше</h2>
+  <ul class:list={["further-grid", { "further-grid-few": relatedPosts.length <= 2 }]}>
+    {relatedPosts.map((post, index) => {
+      const photo = thumbnail(post);
+      const description = post.data.excerpt || post.data.description;
+      return <li class:list={["further-card", { "further-lead": index === 0 }]}>
+        <a class="further-link" href={`/blog/${post.id}/`}>
+          {photo && (typeof photo === "string"
+            ? <img class="further-photo" src={photo} alt="" width="600" height="375" loading="lazy" />
+            : <Image class="further-photo" src={photo} alt="" widths={[320, 480, 800]} sizes={index === 0 ? "(max-width: 640px) calc(100vw - 40px), 425px" : "(max-width: 640px) calc(50vw - 28px), 425px"} loading="lazy" />)}
+          <h3>{post.data.title}</h3>
+        </a>
+        {index === 0 && description && <p class="further-excerpt">{description.length > 180 ? description.slice(0, 180).replace(/\s+\S*$/, "") + "…" : description}</p>}
+        <time class="further-date" datetime={post.data.date.toISOString()} aria-label={post.data.date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}>{post.data.date.getUTCFullYear()}</time>
+      </li>;
+    })}
+  </ul>
+</section>}
 
-{
-    relatedPosts.length > 0 && (
-        <section class="animate">
-            <h2 class="mb-6 text-xl font-semibold text-black dark:text-white">
-                Похожие статьи
-            </h2>
-            <ul class="flex flex-col gap-4">
-                {relatedPosts.map((post) => (
-                    <li class="group">
-                        <a
-                            href={`/blog/${post.id}`}
-                            class="flex flex-col gap-1 py-2"
-                        >
-                            <span class="text-base font-medium text-black decoration-2 underline-offset-2 transition-[text-decoration-thickness] duration-200 group-hover:underline dark:text-white">
-                                {post.data.title}
-                            </span>
-                            <span class="text-sm text-gray-500 dark:text-gray-400">
-                                <FormattedDate date={post.data.date} />
-                            </span>
-                            {post.data.tags && post.data.tags.length > 0 && (
-                                <div class="mt-1 flex flex-wrap gap-1.5">
-                                    {post.data.tags.map((tag) => (
-                                        <span class="rounded border border-black/10 px-2 py-0.5 text-xs text-gray-600 dark:border-white/15 dark:text-gray-400">
-                                            {tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                        </a>
-                    </li>
-                ))}
-            </ul>
-        </section>
-    )
-}
+<style>
+  .further-posts { margin-top: 32px; font-family: "PT Sans", sans-serif; }
+  .further-posts > h2 { margin: 0 0 12px; font-size: 24px; line-height: 1.2; font-weight: 700; letter-spacing: -.02em; }
+  .further-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px 16px; margin: 0; padding: 0; list-style: none; }
+  .further-grid-few { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .further-card { min-width: 0; padding: 0; margin: 0; }
+  .further-lead { grid-column: span 2; }
+  .further-grid-few .further-lead { grid-column: auto; }
+  .further-link { display: block; color: var(--journal-ink); text-decoration: none; }
+  .further-link .further-photo { display: block; width: 100%; height: auto; aspect-ratio: 8 / 5; object-fit: cover; margin: 0 0 8px; }
+  .further-link h3 { margin: 0; font-size: 19px; line-height: 1.25; font-weight: 400; letter-spacing: -.01em; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; text-decoration-color: var(--journal-rule); overflow-wrap: anywhere; }
+  .further-lead h3 { font-size: 25px; font-weight: 700; }
+  .further-link:hover h3 { color: var(--journal-accent); text-decoration-color: var(--journal-accent); }
+  .further-excerpt { margin: 8px 0 4px; font: 17px/1.4 "PT Sans", sans-serif; }
+  .further-date { display: block; margin-top: 5px; color: var(--journal-muted); font-size: 13px; line-height: 1.4; }
+  @media (max-width: 640px) {
+    .further-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; }
+    .further-grid .further-lead { grid-column: 1 / -1; }
+    .further-lead h3 { font-size: 23px; }
+  }
+</style>

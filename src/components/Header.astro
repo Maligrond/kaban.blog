@@ -1,65 +1,22 @@
 ---
 import Container from "@components/Container.astro";
-import Link from "@components/Link.astro";
-import { SITE } from "@consts";
+const path = Astro.url.pathname;
+const section = path.startsWith("/world/") || path.startsWith("/countries/") || path.startsWith("/about/countries") ? "/world/"
+  : path.startsWith("/blog/") || path.startsWith("/tags/") ? "/blog/"
+  : ["/about", "/books/", "/games/", "/movies/", "/bookmarks", "/projects"].some(prefix => path.startsWith(prefix)) ? "/about/" : "";
+const links = [{ href: "/blog/", label: "Блог" }, { href: "/world/", label: "Мир" }, { href: "/about/", label: "Обо мне" }];
 ---
-
-<header transition:persist>
+<header class="site-header">
   <Container>
-    <div class="flex items-center justify-between py-2">
-      <!-- Left: Logo/Name -->
-      <div class="flex items-center gap-3">
-        <Link href="/" underline={false}>
-          <div class="flex items-center gap-2">
-            <img
-              src="/android-chrome-192x192.png"
-              alt="Кабан"
-              class="h-8 w-8"
-            />
-            <span class="text-lg font-semibold text-black dark:text-white"
-              >Кабан</span
-            >
-          </div>
-        </Link>
-        <!-- Primary Navigation -->
-        <nav class="hidden items-center gap-4 text-sm sm:flex">
-          <Link href="/about">обо мне</Link>
-          <Link href="/blog">блог</Link>
-          <Link href="/world">мир</Link>
-          <Link href="/bookmarks">закладки</Link>
-        </nav>
-      </div>
-
-      <!-- Right: Search -->
-      <div class="flex items-center gap-4">
-        <button
-          id="magnifying-glass"
-          aria-label="Search"
-          class="flex items-center gap-1 text-sm text-neutral-600 transition-colors hover:text-black dark:text-neutral-400 dark:hover:text-white"
-        >
-          <svg
-            height="16"
-            stroke-linejoin="round"
-            viewBox="0 0 16 16"
-            width="16"
-            style="color: currentcolor;"
-          >
-            <path
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M3.5 7C3.5 5.067 5.067 3.5 7 3.5C8.933 3.5 10.5 5.067 10.5 7C10.5 7.88461 10.1718 8.69256 9.63058 9.30876L9.30876 9.63058C8.69256 10.1718 7.88461 10.5 7 10.5C5.067 10.5 3.5 8.933 3.5 7ZM9.96544 11.0261C9.13578 11.6382 8.11014 12 7 12C4.23858 12 2 9.76142 2 7C2 4.23858 4.23858 2 7 2C9.76142 2 12 4.23858 12 7C12 8.11014 11.6382 9.13578 11.0261 9.96544L14.0303 12.9697L14.5607 13.5L13.5 14.5607L12.9697 14.0303L9.96544 11.0261Z"
-              fill="currentColor"></path>
-          </svg>
-        </button>
-      </div>
+    <div class="site-nav">
+      <a href="/" class="site-name" aria-label="Кабан — главная"><img src="/android-chrome-192x192.png" alt="" width="28" height="28" />Кабан<span class="accent-dot">.</span></a>
+      <nav aria-label="Основная навигация">
+        {links.map(link => <a href={link.href} aria-current={section === link.href ? (path === link.href ? "page" : "location") : undefined}>{link.label}</a>)}
+      </nav>
+      <button id="magnifying-glass" class="search-trigger" aria-label="Поиск по сайту">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+        <span>Поиск</span>
+      </button>
     </div>
-
-    <!-- Mobile Navigation -->
-    <nav class="flex items-center gap-4 pb-2 text-sm sm:hidden">
-      <Link href="/about">обо мне</Link>
-      <Link href="/blog">блог</Link>
-      <Link href="/world">мир</Link>
-      <Link href="/bookmarks">закладки</Link>
-    </nav>
   </Container>
 </header>

@@ -1,0 +1,20 @@
+---
+import Layout from '@layouts/Layout.astro';
+import Container from '@components/Container.astro';
+---
+<Layout title="Вход автора" description="Вход владельца блога" disableTransitions>
+  <Container>
+    <div class="author-login" data-pagefind-ignore>
+      <h1>Вход автора</h1>
+      <p>Войди своим аккаунтом GitHub, чтобы писать и редактировать записи прямо в блоге.</p>
+      <button class="author-primary" id="author-github-login">Войти через GitHub</button>
+      <button id="author-local-login" hidden>Попробовать локально</button>
+      <p class="author-login-note">Логин и пароль вводятся в окне GitHub. Если ты уже вошёл, останется подтвердить доступ.</p>
+      <p id="author-login-status" role="status"></p>
+    </div>
+  </Container>
+</Layout>
+<script>
+  import { initializeAuthorLogin } from '../scripts/author-editor.js';
+  initializeAuthorLogin();
+</script>

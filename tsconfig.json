@@ -6,7 +6,8 @@
   ],
   "exclude": [
     "dist",
-    "public/pagefind"
+    "public/pagefind",
+    "archive"
   ],
   "compilerOptions": {
     "strictNullChecks": true,

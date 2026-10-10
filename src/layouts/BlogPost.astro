@@ -1,71 +1,14 @@
 ---
-import Layout from "./Layout.astro";
+import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-import BackToPrevious from "@components/BackToPrevious.astro";
-
 const { frontmatter } = Astro.props;
-const isAboutPage = Astro.url.pathname === '/about';
-const isCountryPage = Astro.url.pathname.includes('/about/countries/') && Astro.url.pathname !== '/about/countries';
-
-let backLink = '/about';
-if (isCountryPage) {
-  backLink = '/about/countries';
-}
 ---
-
 <Layout title={frontmatter.title} description={frontmatter.description}>
-  <div id="reading-progress"></div>
   <Container>
-    <div class="animate">
-      {!isAboutPage && (
-        <BackToPrevious href={backLink}>{isCountryPage ? 'Все города' : 'Назад'}</BackToPrevious>
-      )}
+    <div class="post-heading">
+      <a href="/about/" class="back-to-notes">← Обо мне</a>
+      <h1>{frontmatter.title}</h1>
     </div>
-    <article class="prose prose-lg dark:prose-invert max-w-none mt-10">
-      <slot />
-    </article>
+    <article class="post-content"><slot /></article>
   </Container>
 </Layout>
-
-<style is:global>
-  .prose h1 {
-    @apply mb-8;
-  }
-  .prose h2 {
-    @apply mt-8 mb-4;
-  }
-  .prose p {
-    @apply text-gray-700 dark:text-gray-300;
-  }
-  #reading-progress {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 0%;
-    height: 4px;
-    background: linear-gradient(90deg, #4f8cff, #38e8ac);
-    z-index: 9999;
-    transition: width 0.2s;
-  }
-  @media (max-width: 768px) {
-    #reading-progress {
-      height: 2px;
-    }
-  }
-</style>
-
-<script>
-if (typeof window !== 'undefined') {
-  function updateProgressBar() {
-    const progressBar = document.getElementById('reading-progress');
-    if (!progressBar) return;
-    const scrollTop = window.scrollY;
-    const docHeight = document.body.scrollHeight - window.innerHeight;
-    const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-    progressBar.style.width = progress + '%';
-  }
-  window.addEventListener('scroll', updateProgressBar);
-  window.addEventListener('resize', updateProgressBar);
-  document.addEventListener('DOMContentLoaded', updateProgressBar);
-}
-</script>

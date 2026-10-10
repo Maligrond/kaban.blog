@@ -2,7 +2,7 @@
 import { getCollection } from "astro:content";
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-import ArrowCard from "@components/ArrowCard.astro";
+import FormattedDate from "@components/FormattedDate.astro";
 import { PROJECTS } from "@consts";
 
 const projects = (await getCollection("projects"))
@@ -12,21 +12,18 @@ const projects = (await getCollection("projects"))
 
 <Layout title={PROJECTS.TITLE} description={PROJECTS.DESCRIPTION}>
   <Container>
-    <aside data-pagefind-ignore>
-      <div class="space-y-10">
-        <div class="animate font-semibold text-black dark:text-white">
-          Projects
-        </div>
-        <ul class="animate not-prose flex flex-col gap-4">
-          {
-            projects.map((project) => (
-              <li>
-                <ArrowCard entry={project} />
-              </li>
-            ))
-          }
-        </ul>
-      </div>
-    </aside>
+    <div class="journal-page-heading">
+      <a href="/about/" class="back-to-notes">← Обо мне</a>
+      <h1>Проекты<span class="accent-dot">.</span></h1>
+      <p class="journal-page-intro">Мои проекты и эксперименты.</p>
+    </div>
+    {projects.length === 0 && <p class="journal-page-intro">Проекты появятся здесь позже.</p>}
+    <div class="topic-feed">
+      {projects.map(project => <section class="note-preview">
+        <h2><a href={`/projects/${project.id}/`}>{project.data.title}</a></h2>
+        <p class="note-excerpt">{project.data.description}</p>
+        <div class="note-meta"><FormattedDate date={project.data.date} /><a href={`/projects/${project.id}/`}>Подробнее ↗</a></div>
+      </section>)}
+    </div>
   </Container>
 </Layout>

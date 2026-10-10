@@ -6,7 +6,6 @@ rating: 5
 url: "https://www.minecraft.net/"
 ---
 
-# Мои впечатления об игре "Minecraft"
 
 Бесконечная песочница для творчества.
 

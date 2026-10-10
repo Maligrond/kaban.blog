@@ -1,123 +1,23 @@
 ---
-import Layout from "@layouts/Layout.astro";
-import Container from "@components/Container.astro";
-import BackToPrevious from "@components/BackToPrevious.astro";
-import { getCollection } from "astro:content";
-import fs from 'fs';
-import path from 'path';
-import { marked } from 'marked';
-
+import Review from "@layouts/Review.astro";
+import { getCollection, render, type CollectionEntry } from "astro:content";
 export async function getStaticPaths() {
-  const booksDir = path.join(process.cwd(), 'src/content/books');
-  const files = fs.readdirSync(booksDir).filter(file => file.endsWith('.md'));
-  
-  const books = files.map(file => {
-    const filePath = path.join(booksDir, file);
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
-    const frontmatterMatch = fileContent.match(/^---\n([\s\S]*?)\n---/);
-    
-    if (!frontmatterMatch) return null;
-    
-    const frontmatter = frontmatterMatch[1];
-    const data: Record<string, any> = {};
-    const frontmatterLines = frontmatter.split('\n');
-    
-    for (const line of frontmatterLines) {
-      const [key, ...valueParts] = line.split(':');
-      if (key && valueParts.length > 0) {
-        const value = valueParts.join(':').trim();
-        if (key === 'rating') {
-          data[key] = parseInt(value);
-        } else {
-          data[key] = value.replace(/^["']|["']$/g, '');
-        }
-      }
-    }
-    
-    return {
-      id: file.replace('.md', ''),
-      data
-    };
-  }).filter(Boolean);
-  
-  return books.map((book) => ({
-    params: { slug: book!.id },
-    props: book,
-  }));
+  return (await getCollection("books")).filter(entry => !entry.data.draft).map(entry => ({ params: { slug: entry.id }, props: { entry } }));
 }
-
-const book = Astro.props;
-if (!book) {
-  return Astro.redirect("/404");
-}
-
-// Type assertion for book data
-type BookData = {
-  title: string;
-  author: string;
-  date: string;
-  rating: number;
-  url?: string;
-};
-
-const bookData = book.data as unknown as BookData;
-
-// Read the markdown content directly
-const contentPath = path.join(process.cwd(), 'src/content/books', `${book.id}.md`);
-let htmlContent = '';
-try {
-  const fileContent = fs.readFileSync(contentPath, 'utf-8');
-  // Extract content after frontmatter
-  const contentMatch = fileContent.match(/---[\s\S]*?---\n([\s\S]*)/);
-  const markdownContent = contentMatch ? contentMatch[1] : '';
-  // Convert markdown to HTML
-  htmlContent = await marked(markdownContent);
-} catch (e) {
-  htmlContent = '<p>Содержимое книги не найдено.</p>';
-}
+interface Props { entry: CollectionEntry<"books">; }
+const { entry } = Astro.props;
+const { Content } = await render(entry);
 ---
-
-<Layout title={bookData.title} description={`Мои впечатления о книге "${bookData.title}" автора ${bookData.author}`}>
-  <Container>
-    <div class="mb-8">
-      <BackToPrevious />
-    </div>
-    
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-black dark:text-white mb-2">
-        {bookData.title}
-      </h1>
-      <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">
-        {bookData.author}
-      </p>
-      
-      <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-        <span class="text-sm text-gray-500 dark:text-gray-400">
-          {new Date(bookData.date).toLocaleDateString('ru-RU')}
-        </span>
-        <span class="flex items-center gap-1">
-          <span>Рейтинг:</span>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <span class={`${i < bookData.rating ? 'text-black dark:text-white' : 'text-gray-300 dark:text-gray-600'}`}>
-              ★
-            </span>
-          ))}
-        </span>
-        {bookData.url && (
-          <a
-            href={bookData.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Источник
-          </a>
-        )}
-      </div>
-    </div>
-
-    <div class="prose prose-gray dark:prose-invert max-w-none">
-      <div set:html={htmlContent} />
-    </div>
-  </Container>
-</Layout>
+<Review
+  title={entry.data.title}
+  description={`Мои впечатления: ${entry.data.title}`}
+  subtitle={entry.data.author}
+  date={entry.data.date}
+  rating={entry.data.rating}
+  backHref="/about/books/"
+  backLabel="Все книги"
+  url={entry.data.url}
+  sourceLabel="Источник"
+>
+  <Content />
+</Review>

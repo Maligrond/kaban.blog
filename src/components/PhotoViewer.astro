@@ -1,0 +1,124 @@
+<dialog id="photo-viewer" aria-label="Просмотр фотографий" data-pagefind-ignore>
+  <div class="photo-toolbar">
+    <button type="button" data-photo-prev aria-label="Предыдущая фотография">←</button>
+    <span class="photo-position" aria-live="polite"></span>
+    <button type="button" data-photo-next aria-label="Следующая фотография">→</button>
+    <button type="button" data-photo-close autofocus>Закрыть · Esc</button>
+  </div>
+  <figure>
+    <img class="photo-full" alt="" />
+    <figcaption aria-live="polite"></figcaption>
+  </figure>
+</dialog>
+
+<script>
+  let photos: HTMLImageElement[] = [];
+  let current = 0;
+  let trigger: HTMLElement | null = null;
+  const viewer = () => document.querySelector<HTMLDialogElement>("#photo-viewer");
+
+  function initializePhotos() {
+    photos = [];
+    if (!viewer()) return;
+    document.querySelectorAll<HTMLImageElement>(".post-photo-content img").forEach((image) => {
+      // Preserve images that already link somewhere.
+      if (image.closest("a")) return;
+      photos.push(image);
+      if (image.closest("button")) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "photo-trigger";
+      button.setAttribute("aria-label", `Увеличить фотографию: ${image.alt || "фотография из записи"}`);
+      button.setAttribute("aria-haspopup", "dialog");
+      image.before(button);
+      button.append(image);
+    });
+  }
+
+  function displayPhoto(index: number) {
+    const dialog = viewer();
+    const photo = photos[index];
+    const full = dialog?.querySelector<HTMLImageElement>(".photo-full");
+    if (!dialog || !photo || !full) return;
+    current = index;
+    full.src = photo.currentSrc || photo.src;
+    full.alt = photo.alt;
+    dialog.querySelector("figcaption")!.textContent = photo.alt;
+    dialog.querySelector(".photo-position")!.textContent = `${index + 1} / ${photos.length}`;
+    dialog.querySelector<HTMLButtonElement>("[data-photo-prev]")!.disabled = index === 0;
+    dialog.querySelector<HTMLButtonElement>("[data-photo-next]")!.disabled = index === photos.length - 1;
+  }
+
+  document.addEventListener("click", (event) => {
+    if (!(event.target instanceof Element)) return;
+    const button = event.target.closest<HTMLButtonElement>(".photo-trigger");
+    if (button) {
+      const image = button.querySelector("img");
+      const index = image ? photos.indexOf(image) : -1;
+      if (index < 0) return;
+      trigger = button;
+      displayPhoto(index);
+      viewer()?.showModal();
+      return;
+    }
+    const dialog = viewer();
+    if (!dialog?.open) return;
+    if (event.target.closest("[data-photo-close]") || event.target === dialog) dialog.close();
+    if (event.target.closest("[data-photo-prev]") && current > 0) displayPhoto(current - 1);
+    if (event.target.closest("[data-photo-next]") && current < photos.length - 1) displayPhoto(current + 1);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (!viewer()?.open || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.key === "ArrowLeft" && current > 0) {
+      event.preventDefault();
+      displayPhoto(current - 1);
+    }
+    if (event.key === "ArrowRight" && current < photos.length - 1) {
+      event.preventDefault();
+      displayPhoto(current + 1);
+    }
+  });
+
+  document.addEventListener("close", (event) => {
+    if (event.target !== viewer()) return;
+    if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+    trigger = null;
+  }, true);
+  document.addEventListener("astro:before-swap", () => viewer()?.close());
+  document.addEventListener("astro:page-load", initializePhotos);
+  initializePhotos();
+</script>
+
+<style is:global>
+  .post-content .photo-trigger {
+    display: block;
+    width: 100%;
+    margin-block: 1em;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: zoom-in;
+  }
+  .post-content .photo-trigger img { margin: 0; }
+  .photo-trigger:focus-visible { outline: 2px solid var(--journal-accent); outline-offset: 5px; }
+  html:has(#photo-viewer[open]) { overflow: hidden; }
+  #photo-viewer {
+    width: calc(100% - 32px);
+    max-width: 1400px;
+    max-height: calc(100dvh - 32px);
+    margin: auto;
+    padding: 16px;
+    border: 0;
+    background: var(--journal-paper);
+    color: var(--journal-ink);
+  }
+  #photo-viewer::backdrop { background: rgb(0 0 0 / .85); }
+  .photo-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font: 16px/1.4 "PT Sans", sans-serif; }
+  .photo-toolbar button { min-width: 44px; min-height: 44px; padding: 8px; cursor: pointer; }
+  .photo-toolbar button:disabled { opacity: .3; cursor: default; }
+  .photo-toolbar button:focus-visible { outline: 2px solid var(--journal-accent); outline-offset: 2px; }
+  .photo-toolbar [data-photo-close] { margin-left: auto; }
+  #photo-viewer .photo-full { display: block; width: 100%; height: auto; max-height: calc(100dvh - 160px); object-fit: contain; }
+  #photo-viewer figcaption { margin-top: 12px; text-align: center; font: 16px/1.5 "PT Sans", sans-serif; }
+</style>

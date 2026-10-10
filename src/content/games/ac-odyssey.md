@@ -6,7 +6,6 @@ rating: 5
 url: "https://store.steampowered.com/app/812140/Assassins_Creed_Odyssey/"
 ---
 
-# Мои впечатления об игре "AC: Odyssey"
 
 Потрясающее путешествие по Древней Греции.
 

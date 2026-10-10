@@ -6,7 +6,6 @@ rating: 5
 url: "https://store.steampowered.com/app/489830/The_Elder_Scrolls_V_Skyrim_Special_Edition/"
 ---
 
-# Мои впечатления об игре "Skyrim"
 
 Легендарная RPG с огромным открытым миром.
 

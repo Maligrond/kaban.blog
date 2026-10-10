@@ -1,113 +1,28 @@
 ---
-import Layout from "@layouts/Layout.astro";
-import Container from "@components/Container.astro";
-import BackToPrevious from "@components/BackToPrevious.astro";
-import fs from 'fs';
-import path from 'path';
-import { marked } from 'marked';
-
+import Review from "@layouts/Review.astro";
+import { Image } from "astro:assets";
+import { getCollection, render, type CollectionEntry } from "astro:content";
 export async function getStaticPaths() {
-  const countriesDir = path.join(process.cwd(), 'src/content/countries');
-  const files = fs.readdirSync(countriesDir).filter(file => file.endsWith('.md'));
-  
-  const countries = files.map(file => {
-    const filePath = path.join(countriesDir, file);
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
-    const frontmatterMatch = fileContent.match(/^---\n([\s\S]*?)\n---/);
-    
-    if (!frontmatterMatch) return null;
-    
-    const frontmatter = frontmatterMatch[1];
-    const data: Record<string, any> = {};
-    const frontmatterLines = frontmatter.split('\n');
-    
-    for (const line of frontmatterLines) {
-      const [key, ...valueParts] = line.split(':');
-      if (key && valueParts.length > 0) {
-        const value = valueParts.join(':').trim();
-        if (key === 'rating') {
-          data[key] = parseInt(value);
-        } else {
-          data[key] = value.replace(/^["']|["']$/g, '');
-        }
-      }
-    }
-    
-    return {
-      id: file.replace('.md', ''),
-      data
-    };
-  }).filter(Boolean);
-  
-  return countries.map((country) => ({
-    params: { slug: country!.id },
-    props: country,
-  }));
+  return (await getCollection("countries")).filter(entry => !entry.data.draft).map(entry => ({ params: { slug: entry.id }, props: { entry } }));
 }
-
-const country = Astro.props;
-if (!country) {
-  return Astro.redirect("/404");
-}
-
-// Type assertion for country data
-type CountryData = {
-  title: string;
-  country: string;
-  date: string;
-  rating: number;
-  flag: string;
-};
-
-const countryData = country.data as unknown as CountryData;
-
-// Read the markdown content directly
-const contentPath = path.join(process.cwd(), 'src/content/countries', `${country.id}.md`);
-let htmlContent = '';
-try {
-  const fileContent = fs.readFileSync(contentPath, 'utf-8');
-  // Extract content after frontmatter
-  const contentMatch = fileContent.match(/---[\s\S]*?---\n([\s\S]*)/);
-  const markdownContent = contentMatch ? contentMatch[1] : '';
-  // Convert markdown to HTML
-  htmlContent = await marked(markdownContent);
-} catch (e) {
-  htmlContent = '<p>Содержимое города не найдено.</p>';
-}
+interface Props { entry: CollectionEntry<"countries">; }
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const countryHref = `/world/${entry.data.country.toLowerCase().replace(/\s+/g, "-")}/`;
+const stories = (await getCollection("blog"))
+  .filter(post => !post.data.draft && post.data.cities.some(city => city.id === entry.id))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 ---
-
-<Layout title={countryData.title} description={`Мои впечатления о городе "${countryData.title}" в ${countryData.country}`}>
-  <Container>
-    <div class="mb-8">
-      <BackToPrevious />
-    </div>
-    
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-black dark:text-white mb-2 flex items-center gap-3">
-        <span class="text-4xl">{countryData.flag}</span>
-        {countryData.title}
-      </h1>
-      <p class="text-lg text-gray-600 dark:text-gray-400 mb-4">
-        {countryData.country}
-      </p>
-      
-      <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-        <span class="text-sm text-gray-500 dark:text-gray-400">
-          {new Date(countryData.date).toLocaleDateString('ru-RU')}
-        </span>
-        <span class="flex items-center gap-1">
-          <span>Рейтинг:</span>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <span class={`${i < countryData.rating ? 'text-black dark:text-white' : 'text-gray-300 dark:text-gray-600'}`}>
-              ★
-            </span>
-          ))}
-        </span>
-      </div>
-    </div>
-
-    <div class="prose prose-gray dark:prose-invert max-w-none">
-      <div set:html={htmlContent} />
-    </div>
-  </Container>
-</Layout>
+<Review title={entry.data.title} description={`Мои впечатления о городе ${entry.data.title}, ${entry.data.country}`}
+  subtitle={`${entry.data.flag} ${entry.data.country}`} subtitleHref={countryHref}
+  photos={!!entry.data.photo} date={entry.data.date} rating={entry.data.rating} backHref={countryHref} backLabel={`Все города · ${entry.data.country}`}>
+  {entry.data.photo && <figure class="city-photo post-photo-content">
+    <Image src={entry.data.photo} alt={entry.data.photoAlt || `${entry.data.title}, ${entry.data.country}`}
+      widths={[480, 850, 1200]} sizes="(max-width: 640px) calc(100vw - 40px), (max-width: 946px) calc(100vw - 96px), 850px" loading="eager" />
+  </figure>}
+  <Content />
+  {stories.length > 0 && <p class="place-connections not-prose">
+    <span>В моих рассказах: </span>
+    {stories.map((post, index) => <>{index > 0 && " · "}<a href={`/blog/${post.id}/`}>{post.data.title}</a></>)}
+  </p>}
+</Review>

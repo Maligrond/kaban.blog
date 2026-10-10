@@ -1,0 +1,31 @@
+.author-tools { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 18px; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--journal-rule); font: 14px/1.5 'PT Sans', sans-serif; }
+.author-tools button, .author-editor button, .author-login button { color: var(--journal-accent); min-height: 44px; }
+.author-identity { color: var(--journal-muted); font: 13px/1.4 'PT Sans', sans-serif; }
+.author-tools button:last-child { margin-left: auto; }
+.author-editor { max-width: var(--journal-reading-width); }
+.author-editor-top, .author-editor-actions, .author-format-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 20px; font: 14px/1.4 'PT Sans', sans-serif; }
+.author-editor-top { justify-content: space-between; margin-bottom: 20px; }
+.author-field { display: block; margin-bottom: 18px; }
+.author-field > span { display: block; margin-bottom: 7px; font: 13px/1.4 'PT Sans', sans-serif; color: var(--journal-muted); }
+.author-field input, .author-field textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--journal-rule); border-radius: 3px; color: var(--journal-ink); background: var(--journal-paper); font: 17px/1.5 'PT Sans', sans-serif; }
+.author-field input:focus, .author-field textarea:focus { outline: 1px solid var(--journal-accent); outline-offset: 1px; }
+.author-field-title input { padding-inline: 0; border: 0; border-radius: 0; font-size: clamp(30px,5vw,48px); font-weight: 700; line-height: 1.15; }
+.author-field-body textarea { resize: vertical; min-height: 300px; font: 20px/1.5 Georgia, serif; }
+.author-format-bar { margin-bottom: 8px; }
+.author-meta-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+.author-field-description { grid-column: 1 / -1; }
+.author-editor-actions { border-top: 1px solid var(--journal-rule); padding-top: 12px; margin-top: 20px; }
+.author-primary { padding: 8px 16px; border-radius: 3px; background: var(--journal-accent); color: var(--journal-paper) !important; font: 15px/1.4 'PT Sans', sans-serif; }
+.author-status { font: 14px/1.5 'PT Sans', sans-serif; color: var(--journal-muted); margin-top: 12px; }
+.author-preview { padding: 12px 0; }
+.author-drafts { width: min(100% - 40px, 520px); padding: 24px; border: 1px solid var(--journal-rule); border-radius: 6px; background: var(--journal-paper); color: var(--journal-ink); }
+.author-drafts h2 { font-size: 24px; margin-bottom: 16px; }
+.author-drafts button { display: block; min-height: 44px; color: var(--journal-accent); text-align: left; }
+.author-drafts::backdrop { background: rgb(0 0 0 / .3); }
+.author-login { max-width: 580px; }
+.author-login h1 { font-size: 38px; margin-bottom: 12px; }
+.author-login > p { margin-block: 16px; }
+.author-login button { margin-right: 16px; }
+.author-login .author-login-note { max-width: 440px; color: var(--journal-muted); font: 14px/1.5 'PT Sans', sans-serif; }
+.author-editor [hidden], .author-login [hidden], .author-format-bar[hidden] { display: none; }
+@media (max-width: 640px) { .author-meta-fields { grid-template-columns: 1fr; } .author-editor-top { align-items: flex-start; gap: 6px; } .author-field-body textarea { font-size: 18px; } .author-editor-actions { gap: 6px 14px; } }

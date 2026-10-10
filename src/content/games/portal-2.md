@@ -6,7 +6,6 @@ rating: 5
 url: "https://store.steampowered.com/app/620/Portal_2/"
 ---
 
-# Мои впечатления об игре "Portal 2"
 
 Гениальная головоломка с отличным сюжетом и юмором.
 

@@ -1,81 +1,17 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-import BackToPrevious from "@components/BackToPrevious.astro";
-import ArrowCard from "@components/ArrowCard.astro";
-import fs from "fs";
-import path from "path";
-
-// Dynamically load books from markdown files
-const booksDir = path.join(process.cwd(), "src/content/books");
-const files = fs.readdirSync(booksDir).filter((file) => file.endsWith(".md"));
-
-const books = files
-  .map((file) => {
-    const filePath = path.join(booksDir, file);
-    const content = fs.readFileSync(filePath, "utf-8");
-
-    // Parse frontmatter
-    const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-    if (!frontmatterMatch) return null;
-
-    const frontmatter = frontmatterMatch[1];
-    const data: any = {};
-
-    // Simple frontmatter parser
-    frontmatter.split("\n").forEach((line) => {
-      const match = line.match(/^(\w+):\s*(.+)$/);
-      if (match) {
-        const [, key, value] = match;
-        if (key === "rating") {
-          data[key] = parseInt(value);
-        } else {
-          data[key] = value.replace(/^["']|["']$/g, ""); // Remove quotes
-        }
-      }
-    });
-
-    return {
-      id: file.replace(".md", ""),
-      data,
-    };
-  })
-  .filter(Boolean);
-
-const sortedBooks = books.sort(
-  (a, b) =>
-    new Date(b?.data?.date || 0).getTime() -
-    new Date(a?.data?.date || 0).getTime(),
-);
+import ReviewShelf from "@components/ReviewShelf.astro";
+import { getCollection } from "astro:content";
+const entries = (await getCollection("books")).filter(entry => !entry.data.draft).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf() || a.data.title.localeCompare(b.data.title, "ru"));
 ---
-
-<Layout title="Книги" description="Список книг с рейтингом.">
+<Layout title="Книги" description="Здесь я делюсь книгами, которые прочитал и считаю достойными внимания.">
   <Container>
-    <BackToPrevious />
-
-    <div class="prose prose-lg mt-10 max-w-none dark:prose-invert">
-      <h1>Книги</h1>
+    <div class="journal-page-heading">
+      <a href="/about/" class="back-to-notes">← Обо мне</a>
+      <h1>Книги<span class="accent-dot">.</span></h1>
+      <p class="journal-page-intro shelf-intro">Здесь я делюсь книгами, которые прочитал и считаю достойными внимания.</p>
     </div>
-
-    <p class="mb-12 text-lg text-gray-600 dark:text-gray-400">
-      Здесь я делюсь книгами, которые прочитал и считаю достойными внимания.
-    </p>
-    <!-- Books List -->
-
-    <div class="space-y-4">
-      {
-        sortedBooks.map((book) => {
-          const rating = book?.data?.rating || 0;
-          const stars = "★".repeat(rating);
-          return (
-            <ArrowCard
-              title={book?.data?.title}
-              href={`/books/${book?.id}`}
-              date={stars}
-            />
-          );
-        })
-      }
-    </div>
+    <ReviewShelf entries={entries} collection="books" />
   </Container>
 </Layout>

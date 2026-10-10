@@ -1,0 +1,10 @@
+<script>
+  // Readers never load the editor or receive author controls.
+  async function restoreAuthorMode() {
+    if (!sessionStorage.getItem('kaban-author-session')) return;
+    const { activateAuthor } = await import('../scripts/author-editor.js');
+    await activateAuthor();
+  }
+  document.addEventListener('astro:page-load', restoreAuthorMode);
+  restoreAuthorMode();
+</script>

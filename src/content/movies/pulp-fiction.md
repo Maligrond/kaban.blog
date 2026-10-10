@@ -6,7 +6,6 @@ rating: 5
 url: "https://www.imdb.com/title/tt0110912/"
 ---
 
-# Мои впечатления о фильме "Pulp Fiction"
 
 Культовый фильм Квентина Тарантино.
 

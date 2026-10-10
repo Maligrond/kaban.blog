@@ -1,75 +1,35 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
-
-interface Bookmark {
-  title: string;
-  url: string;
-  description?: string;
-  date: string;
-  tags?: string[];
-}
-
-// Fetch bookmarks from content collection (single file "items")
-// @ts-ignore
-import { getEntry, getCollection } from "astro:content";
-
-// @ts-ignore
-import bookmarksData from "../content/bookmarkItems/items.json";
-
-// @ts-ignore
-const bookmarks = (bookmarksData?.items || []) as Bookmark[];
-
-// Sort by date (newest first)
-const sortedBookmarks = bookmarks.sort(
-  (a: Bookmark, b: Bookmark) =>
-    new Date(b.date).getTime() - new Date(a.date).getTime(),
-);
+import FormattedDate from "@components/FormattedDate.astro";
+import { getCollection } from "astro:content";
+const bookmarks = (await getCollection("bookmarkItems")).map(entry => entry.data).sort((a, b) => b.date.valueOf() - a.date.valueOf());
 ---
-
 <Layout title="Закладки" description="Интересные ссылки, которые я сохранил">
   <Container>
-    <div class="animate">
-      <h1 class="mb-8 text-3xl font-semibold text-black dark:text-white">
-        Закладки
-      </h1>
-
-      <p class="mb-12 text-lg text-gray-600 dark:text-gray-400">
-        Ежедневно я получаю новые статьи, видео, эссе и другие материалы в моем
-        RSS-ридере. Здесь я делюсь ссылками, которые нашел интересными и
-        полезными.
-      </p>
-
-      <!-- Bookmarks List -->
-      <div class="space-y-1">
-        {
-          sortedBookmarks.map((bookmark) => (
-            <a
-              href={bookmark.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="group block no-underline"
-            >
-              <div class="flex items-center justify-between gap-4 rounded px-3 py-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800">
-                <div class="flex min-w-0 flex-1 items-center gap-3">
-                  <h3 class="truncate font-medium text-black transition-colors group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
-                    {bookmark.title}
-                  </h3>
-                </div>
-
-                <div class="flex-shrink-0 font-medium text-gray-500 dark:text-gray-400">
-                  <span class="group-hover:hidden">
-                    {new Date(bookmark.date).toLocaleDateString("ru-RU")}
-                  </span>
-                  <span class="hidden text-blue-600 group-hover:inline dark:text-blue-400">
-                    {new URL(bookmark.url).hostname}
-                  </span>
-                </div>
-              </div>
-            </a>
-          ))
-        }
-      </div>
+    <div class="journal-page-heading">
+      <a href="/about/" class="back-to-notes">← Обо мне</a>
+      <h1>Закладки<span class="accent-dot">.</span></h1>
+      <p class="journal-page-intro shelf-intro">Статьи, видео, эссе и другие материалы, которые я сохранил на память.</p>
+    </div>
+    <div class="journal-columns">
+      <section aria-label="Сохранённые ссылки">
+        <div class="section-caption"><span>Сначала новые</span><span>Всего: {bookmarks.length}</span></div>
+        <ul class="bookmark-list">
+          {bookmarks.map(bookmark => <li>
+            <h2><a href={bookmark.url} target="_blank" rel="noopener noreferrer">{bookmark.title}<span class="bookmark-arrow" aria-hidden="true"> ↗</span></a></h2>
+            {bookmark.description && <p class="bookmark-description">{bookmark.description}</p>}
+            <div class="note-meta"><span class="bookmark-domain">{new URL(bookmark.url).hostname.replace(/^www\./, "")}</span><FormattedDate date={bookmark.date} /></div>
+            {bookmark.tags.length > 0 && <ul class="bookmark-tags" aria-label="Темы">{bookmark.tags.map(tag => <li>{tag}</li>)}</ul>}
+          </li>)}
+        </ul>
+        {bookmarks.length === 0 && <p class="journal-page-intro">Здесь пока нет ссылок.</p>}
+      </section>
+      <aside class="journal-aside shelf-aside">
+        <h2 class="eyebrow">Ещё почитать</h2>
+        <a href="/blog/">Блог ↗</a>
+        <a href="/about/books/">Книги ↗</a>
+      </aside>
     </div>
   </Container>
 </Layout>

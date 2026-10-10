@@ -1,12 +1,13 @@
 ---
 title: "Штутгарт"
+photo: ../blog/italy/germany.jpg
+photoAlt: Центр Штуттгарта
 country: "Германия"
 date: "2025-01-29"
 rating: 4
 flag: "🇩🇪"
 ---
 
-# Мои впечатления о городе "Штутгарт"
 
 Автомобильная столица Германии с Mercedes и Porsche.
 

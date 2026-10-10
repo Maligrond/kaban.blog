@@ -6,7 +6,6 @@ rating: 5
 url: "https://store.steampowered.com/app/292030/The_Witcher_3_Wild_Hunt/"
 ---
 
-# Мои впечатления об игре "The Witcher 3"
 
 Шедевр RPG жанра с невероятной историей и персонажами.
 
