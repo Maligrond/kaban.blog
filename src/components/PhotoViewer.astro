@@ -12,17 +12,21 @@
 </dialog>
 
 <script>
+  import { initializeGalleries, layoutPreviewPhotos } from "../scripts/photo-layout.js";
+  import { enhancePost } from "../scripts/post-enhancements.js";
   let photos: HTMLImageElement[] = [];
   let current = 0;
   let trigger: HTMLElement | null = null;
   const viewer = () => document.querySelector<HTMLDialogElement>("#photo-viewer");
 
   function initializePhotos() {
+    document.querySelectorAll(".post-photo-content").forEach(root => {enhancePost(root);layoutPreviewPhotos(root);});
+    initializeGalleries();
     photos = [];
     if (!viewer()) return;
     document.querySelectorAll<HTMLImageElement>(".post-photo-content img").forEach((image) => {
       // Preserve images that already link somewhere.
-      if (image.closest("a")) return;
+      if (image.closest("a, .post-video")) return;
       photos.push(image);
       if (image.closest("button")) return;
       const button = document.createElement("button");
@@ -43,7 +47,7 @@
     current = index;
     full.src = photo.currentSrc || photo.src;
     full.alt = photo.alt;
-    dialog.querySelector("figcaption")!.textContent = photo.alt;
+    dialog.querySelector("figcaption")!.textContent = photo.closest("figure")?.querySelector("figcaption")?.textContent || photo.alt;
     dialog.querySelector(".photo-position")!.textContent = `${index + 1} / ${photos.length}`;
     dialog.querySelector<HTMLButtonElement>("[data-photo-prev]")!.disabled = index === 0;
     dialog.querySelector<HTMLButtonElement>("[data-photo-next]")!.disabled = index === photos.length - 1;
@@ -87,6 +91,7 @@
   }, true);
   document.addEventListener("astro:before-swap", () => viewer()?.close());
   document.addEventListener("astro:page-load", initializePhotos);
+  document.addEventListener("kaban:photos-changed", initializePhotos);
   initializePhotos();
 </script>
 

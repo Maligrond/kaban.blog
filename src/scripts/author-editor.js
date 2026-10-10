@@ -4,10 +4,14 @@ import DOMPurify from 'dompurify';
 import NetlifyAuth from 'netlify-auth-providers';
 import { AuthorAPI, sessionKey, isLocal, validPath } from './author-api.js';
 import '../styles/author.css';
+import { draftStorage } from './author-drafts.js';
+import { layoutPreviewPhotos, initializeGalleries } from './photo-layout.js';
+import { enhancePost } from './post-enhancements.js';
 
 let api;
 let activeEditor;
 let pending = false;
+let flushRecovery;
 const create = (tag, attrs = {}, text = '') => {
   const element = document.createElement(tag);
   Object.entries(attrs).forEach(([key,value]) => element.setAttribute(key, value));
@@ -117,6 +121,9 @@ async function openEditor(path) {
     await api.verify();
     let snapshot = path ? await api.read(path) : {raw:'',sha:null};
     const {doc,body} = splitContent(snapshot.raw);
+    let recoveryKey = `${api.session.type}:${path || 'new'}`;
+    let cachedDraft;
+    try { cachedDraft = await draftStorage('get', recoveryKey); } catch { /* Editing stays available if storage is disabled. */ }
     const main = document.querySelector('main');
     const original = document.createDocumentFragment();
     while (main.firstChild) original.append(main.firstChild);
@@ -125,8 +132,11 @@ async function openEditor(path) {
     activeEditor = editor;
     const top = create('div',{class:'author-editor-top'});
     const close = () => {
-      if (editor.dataset.dirty === 'true' && !confirm('Закрыть редактор без сохранения изменений?')) return;
+      if (editor.dataset.dirty === 'true' && !confirm('Изменения останутся в этом браузере. Закрыть редактор?')) return;
+      clearTimeout(autosaveTimer);
+      if (editor.dataset.dirty === 'true') persistRecovery();
       assets.forEach(asset=>URL.revokeObjectURL(asset.url));
+      flushRecovery = null;
       activeEditor = null; editor.remove(); main.append(original);
     };
     top.append(button('← Вернуться к записи',close),create('span',{class:'author-identity'},api.session.type === 'local' ? 'Сохраняется на этом компьютере' : 'Сохраняется в GitHub'));
@@ -150,15 +160,47 @@ async function openEditor(path) {
     meta.append(slug.parentElement);
     form.append(meta);
     const assets = [];
+    let galleryUpload = false;
+    let autosaveTimer;
+    let uploading = false;
+    let recoveryQueue = Promise.resolve();
     const mediaInput = create('input',{type:'file',accept:'image/jpeg,image/png,image/webp,image/avif',multiple:'',hidden:''});
     const formatBar = create('div',{class:'author-format-bar'});
     function insert(value) {
       text.setRangeText(value,text.selectionStart,text.selectionEnd,'end'); text.dispatchEvent(new Event('input',{bubbles:true})); text.focus();
     }
-    formatBar.append(button('Жирный',()=>insert('**текст**')),button('Ссылка',()=>insert('[текст](https://)')),button('Фотографии',()=>mediaInput.click()));
+    formatBar.append(button('Жирный',()=>insert('**текст**')),button('Ссылка',()=>insert('[текст](https://)')),button('Фотографии',()=>{galleryUpload=false;mediaInput.click();}),button('Галерея',()=>{galleryUpload=true;mediaInput.click();}));
     text.parentElement.before(formatBar); formatBar.append(mediaInput);
-    const preview = create('div',{class:'author-preview post-content blog-post-content',hidden:''});
+    const help=create('details',{class:'author-format-help'});
+    help.append(create('summary',{},'Как оформить текст и добавить видео'));
+    help.append(create('p',{},'Поставь команду на отдельной строке перед абзацем. После абзаца оставь пустую строку.'));
+    const examples=[
+      ['.lead','Вступление — чуть крупнее обычного текста.'],
+      ['.loud','Выделенная мысль — крупная и выразительная.'],
+      ['.foot','Примечание — небольшой текст под основным абзацем.'],
+    ];
+    for(const [command,description] of examples) {
+      const row=create('div',{class:'author-help-example'});
+      row.append(create('p',{},description),create('pre',{},command+'\nТвой текст здесь.'));
+      row.append(button('Вставить '+command,()=>insert('\n\n'+command+'\nТвой текст здесь.\n\n')));
+      help.append(row);
+    }
+    help.append(create('p',{},'YouTube: вставь ссылку на ролик отдельным абзацем — в предпросмотре и записи появится плеер. Внутри предложения ссылка останется обычной ссылкой.'));
+    help.append(create('pre',{},'https://www.youtube.com/watch?v=…'));
+    help.append(create('p',{},'Подпись фотографии пишется в кавычках после адреса. Для галереи расположи снимки на соседних строках без пустой строки между ними.'));
+    help.append(create('pre',{},'![Описание](photo.jpg "Подпись фотографии")'));
+    formatBar.after(help);
+    const preview = create('div',{class:'author-preview post-content blog-post-content post-photo-content',hidden:''});
     const status = create('p',{class:'author-status',role:'status','aria-live':'polite'});
+    const recoveryStatus = create('p',{class:'author-status author-recovery-status',role:'status'},'Текст и фотографии автоматически сохраняются в этом браузере.');
+    async function persistRecovery() {
+      const value = {fields:Object.fromEntries([title,text,tags,date,description,slug].map(input=>[input.name,input.value])),
+        assets:assets.map(({name,content})=>({name,content})), sha:snapshot.sha, savedAt:Date.now()};
+      recoveryQueue = recoveryQueue.catch(()=>{}).then(()=>draftStorage('put',recoveryKey,value));
+      try { await recoveryQueue; recoveryStatus.textContent='Сохранено в браузере · ' + new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}); }
+      catch { recoveryStatus.textContent='Не удалось сохранить в браузере. Сохрани черновик перед закрытием.'; }
+    }
+    flushRecovery = () => {if(editor.dataset.dirty==='true') {clearTimeout(autosaveTimer);persistRecovery();}};
     const actions = create('div',{class:'author-editor-actions'});
     let imageMap = {};
     fetch('/admin/media.json').then(r=>r.json()).then(map=>{imageMap=map;}).catch(()=>{});
@@ -173,6 +215,9 @@ async function openEditor(path) {
         const key=new URL(src,'https://preview.invalid/'+targetPath).pathname.slice(1);
         if(imageMap[decodeURIComponent(key)]) img.src=imageMap[decodeURIComponent(key)];
       });
+      enhancePost(preview);
+      layoutPreviewPhotos(preview); initializeGalleries(preview);
+      document.dispatchEvent(new Event('kaban:photos-changed'));
     }
     const toggle = button('Предпросмотр',()=>{
       const showing = preview.hidden;
@@ -180,30 +225,69 @@ async function openEditor(path) {
       toggle.textContent=showing?'Редактировать текст':'Предпросмотр';
       if(showing) refreshPreview();
     });
-    form.addEventListener('input',()=>{editor.dataset.dirty='true'; if(!preview.hidden)refreshPreview();});
+    form.addEventListener('input',()=>{editor.dataset.dirty='true'; clearTimeout(autosaveTimer); autosaveTimer=setTimeout(persistRecovery,400); if(!preview.hidden)refreshPreview();});
     title.addEventListener('input',()=>{if(!path && !slug.dataset.manual)slug.value=slugify(title.value);});
     slug.addEventListener('input',()=>{slug.dataset.manual='true';});
-    mediaInput.addEventListener('change',async()=>{
+    async function addPhotos(files, gallery = false) {
+      if(uploading || saving) return;
+      uploading=true; text.disabled=true;
+      formatBar.querySelectorAll('button').forEach(btn=>btn.disabled=true);
+      top.querySelectorAll('button').forEach(btn=>btn.disabled=true);
+      const start=text.selectionStart, end=text.selectionEnd;
       try {
-        for (const file of mediaInput.files) {
-          if (!['image/jpeg','image/png','image/webp','image/avif'].includes(file.type) || file.size>10*1024*1024) throw new Error('Выбери JPG, PNG, WebP или AVIF до 10 МБ.');
+        const chosen=Array.from(files);
+        if(!chosen.length) return;
+        if(chosen.some(file=>!['image/jpeg','image/png','image/webp','image/avif'].includes(file.type) || file.size>10*1024*1024)) throw new Error('Выбери JPG, PNG, WebP или AVIF до 10 МБ.');
+        status.textContent='Добавляю фотографии…';
+        const additions=[];
+        for (const file of chosen) {
           const extension=file.type==='image/jpeg'?'jpg':file.type.split('/')[1];
           const name=`photo-${crypto.randomUUID()}.${extension}`;
           const bytes=new Uint8Array(await file.arrayBuffer());
           let binary=''; for(const byte of bytes)binary+=String.fromCharCode(byte);
-          assets.push({name,content:btoa(binary),url:URL.createObjectURL(file)});
-          insert(`\n![Описание фотографии](${name})\n`);
+          additions.push({name,content:btoa(binary),url:URL.createObjectURL(file)});
         }
+        assets.push(...additions);
+        text.disabled=false;
+        text.setSelectionRange(start,end);
+        insert('\n\n'+additions.map(asset=>`![Описание фотографии](${asset.name} "")`).join(gallery?'\n':'\n\n')+'\n\n');
+        status.textContent=gallery?'Галерея добавлена. Впиши подписи в кавычки после адресов фотографий.':'Фотографии добавлены. Подпись можно вписать в кавычки после адреса.';
+        await persistRecovery();
       } catch(error) {status.textContent=error.message;}
-      mediaInput.value='';
+      finally {uploading=false; text.disabled=false; formatBar.querySelectorAll('button').forEach(btn=>btn.disabled=false);top.querySelectorAll('button').forEach(btn=>btn.disabled=false);}
+    }
+    mediaInput.addEventListener('change',async()=>{
+      await addPhotos(mediaInput.files,galleryUpload);
+      galleryUpload=false; mediaInput.value='';
     });
+    text.addEventListener('paste',event=>{
+      const files=Array.from(event.clipboardData?.files || []);
+      if(!files.length) return;
+      event.preventDefault(); addPhotos(files,files.length>1);
+    });
+    text.addEventListener('dragover',event=>{
+      if(!event.dataTransfer?.types.includes('Files'))return;
+      event.preventDefault(); text.classList.add('author-drop-target');
+    });
+    text.addEventListener('dragleave',()=>text.classList.remove('author-drop-target'));
+    text.addEventListener('drop',event=>{
+      if(!event.dataTransfer?.files.length)return;
+      event.preventDefault(); text.classList.remove('author-drop-target');
+      addPhotos(event.dataTransfer.files,event.dataTransfer.files.length>1);
+    });
+    editor.addEventListener('dragover',event=>{if(event.dataTransfer?.types.includes('Files'))event.preventDefault();});
+    editor.addEventListener('drop',event=>{if(event.dataTransfer?.files.length)event.preventDefault();});
+    text.setAttribute('aria-describedby','author-photo-hint');
+    text.parentElement.append(create('small',{class:'author-photo-hint',id:'author-photo-hint'},'Перетащи фотографии сюда или вставь скриншот через ⌘V / Ctrl+V. Несколько снимков вместе — галерея.'));
     let saving=false;
     async function save(publish) {
+      if(uploading) {status.textContent='Дождись добавления фотографий.';return;}
       if(saving || !form.reportValidity()) return;
       if(!title.value.trim() || !description.value.trim()) {status.textContent='Заполни заголовок и короткое описание.';return;}
       const targetPath=path || `src/content/blog/${slug.value}/index.md`;
       if(!validPath(targetPath)) {status.textContent='Адрес может содержать буквы, цифры и дефисы.';return;}
-      saving=true; actions.querySelectorAll('button').forEach(btn=>btn.disabled=true);
+      saving=true; clearTimeout(autosaveTimer);
+      form.querySelectorAll('input,textarea,button').forEach(input=>input.disabled=true);
       status.textContent=publish?'Публикую…':'Сохраняю черновик…';
       try {
         doc.set('title',title.value.trim()); doc.set('description',description.value.trim());
@@ -212,22 +296,43 @@ async function openEditor(path) {
         const staged=assets.map(asset=>({path:targetPath.slice(0,targetPath.lastIndexOf('/')+1)+asset.name,content:asset.content}));
         snapshot=await api.save(targetPath,raw,snapshot,staged,publish);
         path=targetPath; slug.readOnly=true; editor.dataset.dirty='false';
+        clearTimeout(autosaveTimer);
+        await recoveryQueue.catch(()=>{});
+        try { await draftStorage('delete',recoveryKey); } catch { /* A stale recovery copy is harmless. */ }
+        recoveryKey=`${api.session.type}:${targetPath}`;
+        recoveryStatus.textContent='Сохранено ' + (api.session.type==='local'?'в файле записи.':'в GitHub.');
         status.textContent=api.session.type==='local'
           ? (publish?'Запись сохранена локально. На сайте появится после сборки; пуш выполняется отдельно.':'Черновик сохранён локально и скрыт с сайта.')
           : (publish?'Изменения отправлены в main. Запись появится после сборки Netlify.':'Черновик сохранён в GitHub. Посетители его не видят.');
       } catch(error) {status.textContent=error.message;}
-      finally {saving=false; actions.querySelectorAll('button').forEach(btn=>btn.disabled=false);}
+      finally {saving=false; form.querySelectorAll('input,textarea,button').forEach(input=>input.disabled=false);}
     }
     actions.append(toggle,button('Сохранить черновик',()=>save(false)),button('Опубликовать',()=>save(true),true));
     text.parentElement.after(preview);
-    form.append(actions,status); form.addEventListener('submit',e=>e.preventDefault());
+    form.append(actions,status,recoveryStatus);
+    if(cachedDraft?.fields) {
+      const notice=create('div',{class:'author-recovery-notice'});
+      notice.append(create('p',{},cachedDraft.sha !== snapshot.sha ? 'Есть несохранённая копия. Запись изменилась после её создания — восстановление заменит текст в редакторе.' : 'Есть несохранённая копия этой записи в браузере.'));
+      notice.append(button('Восстановить',()=>{
+        [title,text,tags,date,description,slug].forEach(input=>{if(input!==slug || !path)input.value=cachedDraft.fields[input.name] ?? input.value;});
+        if(!path)slug.dataset.manual='true';
+        for(const asset of cachedDraft.assets || []) {
+          const bytes=Uint8Array.from(atob(asset.content),c=>c.charCodeAt(0));
+          assets.push({...asset,url:URL.createObjectURL(new Blob([bytes]))});
+        }
+        editor.dataset.dirty='true'; notice.remove(); persistRecovery();
+      }),button('Удалить копию',async()=>{
+        try {await draftStorage('delete',recoveryKey);notice.remove();} catch {status.textContent='Не удалось удалить копию.';}
+      }));
+      top.after(notice);
+    } form.addEventListener('submit',e=>e.preventDefault());
     editor.append(form); main.append(editor);
     document.querySelectorAll(".site-header a").forEach(link=>link.setAttribute("data-astro-reload", ""));
     title.focus();
   } catch(error) {loading.textContent=error.message;}
 }
 window.addEventListener('beforeunload',event=>{
-  if(activeEditor?.dataset.dirty==='true') {event.preventDefault();event.returnValue='';}
+  if(activeEditor?.dataset.dirty==='true') {flushRecovery?.();event.preventDefault();event.returnValue='';}
 });
 // Intercept links before Astro navigation; native reloads use beforeunload too.
 document.addEventListener('click',event=>{
@@ -240,4 +345,6 @@ document.addEventListener('click',event=>{
     location.assign(link.href);
   }
 },true);
-document.addEventListener('astro:before-swap',()=>{activeEditor=null;});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flushRecovery?.();});
+window.addEventListener('pagehide',()=>flushRecovery?.());
+document.addEventListener('astro:before-swap',()=>{flushRecovery?.();flushRecovery=null;activeEditor=null;});

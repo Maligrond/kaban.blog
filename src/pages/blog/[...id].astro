@@ -35,7 +35,6 @@ const { Content } = await render(post);
     <div class="post-heading blog-post-heading" data-author-path={`src/content/blog/${post.id}/index.md`}>
       <a class="back-to-notes" href="/blog/">← Все записи</a>
       <h1>{post.data.title}</h1>
-      <div class="note-meta"><FormattedDate date={post.data.date} compact /></div>
     </div>
     <article class="post-content blog-post-content">
       <div class="post-photo-content"><Content /></div>

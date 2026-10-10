@@ -29,3 +29,12 @@
 .author-login .author-login-note { max-width: 440px; color: var(--journal-muted); font: 14px/1.5 'PT Sans', sans-serif; }
 .author-editor [hidden], .author-login [hidden], .author-format-bar[hidden] { display: none; }
 @media (max-width: 640px) { .author-meta-fields { grid-template-columns: 1fr; } .author-editor-top { align-items: flex-start; gap: 6px; } .author-field-body textarea { font-size: 18px; } .author-editor-actions { gap: 6px 14px; } }
+.author-photo-hint { display: block; margin-top: 7px; font: 13px/1.5 'PT Sans', sans-serif; color: var(--journal-muted); }
+.author-field textarea.author-drop-target { outline: 2px dashed var(--journal-accent); outline-offset: 3px; }
+.author-recovery-notice { margin-bottom: 20px; padding: 12px 16px; border-left: 2px solid var(--journal-accent); background: color-mix(in srgb, var(--journal-accent), transparent 95%); font: 15px/1.5 'PT Sans', sans-serif; }
+.author-recovery-notice button { margin-right: 20px; }
+.author-format-help { margin: 0 0 16px; padding-bottom: 12px; border-bottom: 1px solid var(--journal-rule); color: var(--journal-muted); font: 14px/1.5 'PT Sans', sans-serif; }
+.author-format-help summary { cursor: pointer; min-height: 32px; display: list-item; align-content: center; color: var(--journal-accent); }
+.author-format-help p { margin: 10px 0 6px; }
+.author-format-help pre { padding: 10px 12px; border: 1px solid var(--journal-rule); border-radius: 3px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--journal-ink); font: 13px/1.6 monospace; }
+.author-format-help button { margin-top: 3px; font-size: 13px; }
