@@ -1,5 +1,6 @@
 ---
 title: "Стамбул"
+coordinates: [41.01384, 28.94966]
 country: "Турция"
 date: "2025-02-25"
 rating: 5

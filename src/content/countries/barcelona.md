@@ -1,5 +1,6 @@
 ---
 title: "Барселона"
+coordinates: [41.38879, 2.15899]
 country: "Испания"
 date: "2025-01-16"
 rating: 5

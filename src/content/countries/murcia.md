@@ -1,5 +1,6 @@
 ---
 title: "Мурсия"
+coordinates: [37.98704, -1.13004]
 country: "Испания"
 date: "2025-02-02"
 rating: 3

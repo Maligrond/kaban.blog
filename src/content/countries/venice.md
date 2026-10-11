@@ -1,5 +1,6 @@
 ---
 title: "Венеция"
+coordinates: [45.43713, 12.33265]
 country: "Италия"
 date: "2025-02-11"
 rating: 5

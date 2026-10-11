@@ -3,7 +3,7 @@ import Container from "@components/Container.astro";
 const path = Astro.url.pathname;
 const section = path.startsWith("/world/") || path.startsWith("/countries/") || path.startsWith("/about/countries") ? "/world/"
   : path.startsWith("/blog/") || path.startsWith("/tags/") ? "/blog/"
-  : ["/about", "/books/", "/games/", "/movies/", "/bookmarks", "/projects"].some(prefix => path.startsWith(prefix)) ? "/about/" : "";
+  : ["/now/", "/about", "/books/", "/games/", "/movies/", "/bookmarks", "/projects"].some(prefix => path.startsWith(prefix)) ? "/about/" : "";
 const links = [{ href: "/blog/", label: "Блог" }, { href: "/world/", label: "Мир" }, { href: "/about/", label: "Обо мне" }];
 ---
 <header class="site-header">

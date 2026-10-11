@@ -1,5 +1,6 @@
 ---
 title: "Прага"
+coordinates: [50.08804, 14.42076]
 country: "Чехия"
 date: "2025-02-21"
 rating: 5

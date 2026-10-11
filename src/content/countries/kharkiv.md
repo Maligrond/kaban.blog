@@ -1,5 +1,6 @@
 ---
 title: "Харьков"
+coordinates: [49.98177, 36.25475]
 country: "Украина"
 date: "2025-03-03"
 rating: 4

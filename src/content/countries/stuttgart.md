@@ -2,6 +2,7 @@
 title: "Штутгарт"
 photo: ../blog/italy/germany.jpg
 photoAlt: Центр Штуттгарта
+coordinates: [48.78232, 9.17702]
 country: "Германия"
 date: "2025-01-29"
 rating: 4

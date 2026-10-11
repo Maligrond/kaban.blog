@@ -1,5 +1,6 @@
 ---
 title: "Логроньо"
+coordinates: [42.46615, -2.45115]
 country: "Испания"
 date: "2025-02-01"
 rating: 3

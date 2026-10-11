@@ -7,7 +7,7 @@ import { BLOG } from "@consts";
 const data = (await getCollection("blog", ({ data }) => !data.draft))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 const posts = data.reduce((acc: Record<string, CollectionEntry<"blog">[]>, post) => {
-  const year = post.data.date.getFullYear().toString();
+  const year = post.data.date.getUTCFullYear().toString();
   (acc[year] ||= []).push(post);
   return acc;
 }, {});
@@ -25,7 +25,7 @@ const tags = [...new Set(data.flatMap(post => post.data.tags || []))].sort((a, b
       <div class="journal-columns">
         <div>
           {years.map(year => <section aria-label={`Записи за ${year} год`} class="archive-year">
-            <div class="section-caption"><h2>{year}</h2><span>Записей: {posts[year].length}</span></div>
+            <div class="section-caption"><h2><a href={`/archive/${year}/`}>{year}</a></h2><span>Записей: {posts[year].length}</span></div>
             {posts[year].map(post => <NotePreview post={post} />)}
           </section>)}
           {data.length === 0 && <p class="journal-page-intro">Первая запись появится здесь скоро.</p>}
@@ -36,6 +36,7 @@ const tags = [...new Set(data.flatMap(post => post.data.tags || []))].sort((a, b
             {tags.map(tag => <a href={`/tags/${encodeURIComponent(tag)}/`}>{tag}<span>{data.filter(post => post.data.tags?.includes(tag)).length}</span></a>)}
           </div>
           <a class="aside-action" href="/tags/">Все темы ↗</a>
+          <a class="aside-action" href="/archive/">Архив по годам ↗</a>
           <a class="aside-action" href="/rss.xml">Подписаться по RSS ↗</a>
         </aside>
       </div>

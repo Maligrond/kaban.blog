@@ -1,5 +1,6 @@
 ---
 title: "Киев"
+coordinates: [50.45466, 30.5238]
 country: "Украина"
 date: "2025-02-28"
 rating: 5

@@ -1,5 +1,6 @@
 ---
 title: "Львов"
+coordinates: [49.83826, 24.02324]
 country: "Украина"
 date: "2025-03-01"
 rating: 5

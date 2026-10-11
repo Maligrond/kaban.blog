@@ -1,5 +1,6 @@
 ---
 title: "Монако"
+coordinates: [43.73718, 7.42145]
 country: "Монако"
 date: "2025-02-17"
 rating: 4

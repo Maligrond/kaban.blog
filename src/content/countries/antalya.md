@@ -1,5 +1,6 @@
 ---
 title: "Анталья"
+coordinates: [36.90812, 30.69556]
 country: "Турция"
 date: "2025-02-24"
 rating: 4

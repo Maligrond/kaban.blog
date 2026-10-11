@@ -1,5 +1,6 @@
 ---
 title: "Генуя"
+coordinates: [44.40478, 8.94439]
 country: "Италия"
 date: "2025-02-04"
 rating: 4

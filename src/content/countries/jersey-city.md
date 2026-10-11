@@ -1,5 +1,6 @@
 ---
 title: "Джерси-Сити"
+coordinates: [40.72816, -74.07764]
 country: "США"
 date: "2025-03-05"
 rating: 3

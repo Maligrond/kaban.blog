@@ -1,5 +1,6 @@
 ---
 title: "Валенсия"
+coordinates: [39.47391, -0.37966]
 country: "Испания"
 date: "2025-01-31"
 rating: 5

@@ -1,5 +1,6 @@
 ---
 title: "Брюгге"
+coordinates: [51.20892, 3.22424]
 country: "Бельгия"
 date: "2025-01-20"
 rating: 4

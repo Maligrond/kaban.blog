@@ -1,5 +1,6 @@
 ---
 title: "Токио"
+coordinates: [35.6895, 139.69171]
 country: "Япония"
 date: "2025-01-12"
 rating: 5

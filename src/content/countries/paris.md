@@ -1,5 +1,6 @@
 ---
 title: "Париж"
+coordinates: [48.85341, 2.3488]
 country: "Франция"
 date: "2024-03-15"
 rating: 5

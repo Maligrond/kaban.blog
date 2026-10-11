@@ -1,5 +1,6 @@
 ---
 title: "Мелитополь"
+coordinates: [46.84735, 35.38196]
 country: "Украина"
 date: "2025-03-02"
 rating: 3

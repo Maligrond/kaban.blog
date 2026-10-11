@@ -1,5 +1,6 @@
 ---
 title: "Мюнхен"
+coordinates: [48.13743, 11.57549]
 country: "Германия"
 date: "2025-01-27"
 rating: 5

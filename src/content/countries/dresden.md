@@ -1,5 +1,6 @@
 ---
 title: "Дрезден"
+coordinates: [51.05089, 13.73832]
 country: "Германия"
 date: "2025-01-24"
 rating: 4

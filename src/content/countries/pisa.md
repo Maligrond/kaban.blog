@@ -1,5 +1,6 @@
 ---
 title: "Пиза"
+coordinates: [43.70853, 10.4036]
 country: "Италия"
 date: "2025-02-07"
 rating: 3

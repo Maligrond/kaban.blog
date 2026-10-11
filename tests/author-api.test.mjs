@@ -5,8 +5,13 @@ import assert from 'node:assert/strict';
 globalThis.location = {hostname:'kaban.blog'};
 const {AuthorAPI,validPath} = await import('../src/scripts/author-api.js');
 const response = (data,status=200) => ({ok:status>=200&&status<300,status,json:async()=>data});
-test('entry paths cannot escape the blog directory',()=>{
+test('entry paths are limited to blog posts and the known now page',()=>{
   assert.equal(validPath('src/content/blog/italian/index.md'),true);
+  assert.equal(validPath('src/content/pages/now/index.md'),true);
+  assert.equal(validPath('src/content/pages/other/index.md'),false);
+  const api=new AuthorAPI({type:'github'});
+  assert.equal(api.branch('src/content/pages/now/index.md'),'codex/author-pages/now');
+  assert.equal(api.branch('src/content/blog/now/index.md'),'codex/author/now');
   for(const path of ['../secrets','src/content/blog/../index.md','src/content/blog/a/b/index.md','src/content/blog/a/index.mdx']) assert.equal(validPath(path),false);
 });
 test('a forged local session is rejected on the published site',async()=>{

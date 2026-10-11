@@ -1,5 +1,6 @@
 ---
 title: "Памплона"
+coordinates: [42.81687, -1.64323]
 country: "Испания"
 date: "2025-02-03"
 rating: 4

@@ -1,5 +1,6 @@
 ---
 title: "Ялта"
+coordinates: [44.50218, 34.16624]
 country: "Украина"
 date: "2025-03-04"
 rating: 4

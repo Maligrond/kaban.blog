@@ -1,5 +1,6 @@
 ---
 title: "Еленя-Гура"
+coordinates: [50.89973, 15.72899]
 country: "Польша"
 date: "2025-02-20"
 rating: 3

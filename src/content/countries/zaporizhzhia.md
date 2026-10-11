@@ -1,5 +1,6 @@
 ---
 title: "Запорожье"
+coordinates: [47.85167, 35.11714]
 country: "Украина"
 date: "2025-02-27"
 rating: 3

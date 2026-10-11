@@ -1,5 +1,6 @@
 ---
 title: "Милан"
+coordinates: [45.46427, 9.18951]
 country: "Италия"
 date: "2025-02-05"
 rating: 5

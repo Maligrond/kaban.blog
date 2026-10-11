@@ -1,5 +1,6 @@
 ---
 title: "Мальме"
+coordinates: [55.60587, 13.00073]
 country: "Швеция"
 date: "2025-03-11"
 rating: 4

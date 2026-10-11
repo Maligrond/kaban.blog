@@ -1,5 +1,6 @@
 ---
 title: "Помпеи"
+coordinates: [40.74574, 14.49698]
 country: "Италия"
 date: "2025-02-08"
 rating: 5

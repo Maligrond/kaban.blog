@@ -1,5 +1,6 @@
 ---
 title: "Калгари"
+coordinates: [51.05011, -114.08529]
 country: "Канада"
 date: "2025-02-13"
 rating: 4

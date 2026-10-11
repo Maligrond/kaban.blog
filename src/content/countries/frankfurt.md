@@ -1,5 +1,6 @@
 ---
 title: "Франкфурт"
+coordinates: [50.11552, 8.68417]
 country: "Германия"
 date: "2025-01-28"
 rating: 4

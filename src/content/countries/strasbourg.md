@@ -1,5 +1,6 @@
 ---
 title: "Страсбург"
+coordinates: [48.58392, 7.74553]
 country: "Франция"
 date: "2025-03-08"
 rating: 4

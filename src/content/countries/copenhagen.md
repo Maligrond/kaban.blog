@@ -1,5 +1,6 @@
 ---
 title: "Копенгаген"
+coordinates: [55.67594, 12.56553]
 country: "Дания"
 date: "2025-03-09"
 rating: 5

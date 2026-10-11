@@ -1,5 +1,6 @@
 ---
 title: "Анкара"
+coordinates: [39.91987, 32.85427]
 country: "Турция"
 date: "2025-02-23"
 rating: 3

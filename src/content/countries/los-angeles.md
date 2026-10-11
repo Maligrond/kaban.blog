@@ -1,5 +1,6 @@
 ---
 title: "Лос-Анджелес"
+coordinates: [34.05223, -118.24368]
 country: "США"
 date: "2025-03-06"
 rating: 4

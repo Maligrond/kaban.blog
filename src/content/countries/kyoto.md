@@ -1,5 +1,6 @@
 ---
 title: "Киото"
+coordinates: [35.02107, 135.75385]
 country: "Япония"
 date: "2025-03-10"
 rating: 5

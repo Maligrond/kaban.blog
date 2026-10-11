@@ -1,0 +1,20 @@
+---
+import Layout from '@layouts/Layout.astro';
+import Container from '@components/Container.astro';
+import FormattedDate from '@components/FormattedDate.astro';
+import {getEntry,render} from 'astro:content';
+const page=await getEntry('pages','now');
+if(!page)throw new Error('Страница «Сейчас» не найдена');
+if(page.data.draft)return Astro.redirect('/404.html');
+const {Content}=await render(page);
+---
+<Layout title={page.data.title} description={page.data.description}>
+  <Container>
+    <div class="post-heading" data-author-path="src/content/pages/now/index.md">
+      <a class="back-to-notes" href="/about/">← Обо мне</a>
+      <h1>{page.data.title}<span class="accent-dot">.</span></h1>
+    </div>
+    <article class="post-content"><div class="post-photo-content"><Content /></div><p class="now-updated not-prose">Обновлено <FormattedDate date={page.data.updated} compact /></p></article>
+  </Container>
+</Layout>
+<style>.now-updated { margin-top:28px; color:var(--journal-muted); font:14px/1.5 'PT Sans',sans-serif; }</style>

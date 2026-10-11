@@ -1,5 +1,6 @@
 ---
 title: "Герлиц"
+coordinates: [51.15518, 14.98853]
 country: "Германия"
 date: "2025-01-25"
 rating: 3

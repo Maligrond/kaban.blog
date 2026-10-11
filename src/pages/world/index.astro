@@ -3,6 +3,7 @@ import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
 import FormattedDate from "@components/FormattedDate.astro";
 import NotePreview from "@components/NotePreview.astro";
+import TravelMap from "@components/TravelMap.astro";
 import { getCollection } from "astro:content";
 import { Image } from "astro:assets";
 
@@ -51,6 +52,7 @@ const stories = (await getCollection("blog")).filter(post => !post.data.draft &&
         <span>Городов: {cities.length} <span aria-hidden="true">·</span> Стран: {countries.length}</span>
         <a href="/about/countries/">Все города с оценками ↗</a>
       </div>
+      <TravelMap cities={cities} />
       <div class="world-directory-layout">
         <section class="world-directory" aria-labelledby="world-directory-heading">
           <h2 id="world-directory-heading">Города и страны</h2>

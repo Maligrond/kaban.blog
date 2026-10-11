@@ -68,7 +68,7 @@ const movies = defineCollection({
 });
 const countries = defineCollection({
   loader: glob({ pattern: "*.md", base: "./src/content/countries" }),
-  schema: ({ image }) => z.object({ ...reviewFields, country: z.string(), flag: z.string(), favorite: z.boolean().default(false), photo: image().optional(), photoAlt: z.string().optional() }),
+  schema: ({ image }) => z.object({ ...reviewFields, country: z.string(), flag: z.string(), favorite: z.boolean().default(false), photo: image().optional(), photoAlt: z.string().optional(), coordinates: z.preprocess(value => value === null || (Array.isArray(value) && value.length === 0) ? undefined : value, z.tuple([z.number().min(-90).max(90), z.number().min(-180).max(180)]).optional()) }),
 });
 const bookmarkItems = defineCollection({
   loader: file("src/content/bookmarkItems/items.json", {
@@ -77,4 +77,9 @@ const bookmarkItems = defineCollection({
   schema: z.object({ title: z.string(), url: z.url(), description: z.string().optional(), date: z.coerce.date(), tags: z.array(z.string()).default([]) }),
 });
 
-export const collections = { blog, projects, galleries, books, games, movies, countries, bookmarkItems };
+const pages = defineCollection({
+  loader: glob({ pattern: "**/*.md", base: "./src/content/pages" }),
+  schema: z.object({ title: z.string(), description: z.string(), updated: z.coerce.date(), draft: z.boolean().optional() }),
+});
+
+export const collections = { pages, blog, projects, galleries, books, games, movies, countries, bookmarkItems };

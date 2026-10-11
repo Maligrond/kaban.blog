@@ -1,5 +1,6 @@
 ---
 title: "Неаполь"
+coordinates: [40.85216, 14.26811]
 country: "Италия"
 date: "2025-02-06"
 rating: 4

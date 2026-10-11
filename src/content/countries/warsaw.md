@@ -1,5 +1,6 @@
 ---
 title: "Варшава"
+coordinates: [52.22977, 21.01178]
 country: "Польша"
 date: "2025-02-18"
 rating: 4

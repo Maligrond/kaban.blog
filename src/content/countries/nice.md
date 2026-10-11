@@ -1,5 +1,6 @@
 ---
 title: "Ницца"
+coordinates: [43.70313, 7.26608]
 country: "Франция"
 date: "2025-03-07"
 rating: 5

@@ -1,5 +1,6 @@
 ---
 title: "Рим"
+coordinates: [41.89193, 12.51133]
 country: "Италия"
 date: "2025-01-17"
 rating: 5

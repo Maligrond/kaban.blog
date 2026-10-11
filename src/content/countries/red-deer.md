@@ -1,5 +1,6 @@
 ---
 title: "Ред-Дир"
+coordinates: [52.26682, -113.802]
 country: "Канада"
 date: "2025-02-14"
 rating: 3

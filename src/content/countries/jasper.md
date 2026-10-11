@@ -1,5 +1,6 @@
 ---
 title: "Джаспер"
+coordinates: [52.87946, -118.08041]
 country: "Канада"
 date: "2025-02-12"
 rating: 5

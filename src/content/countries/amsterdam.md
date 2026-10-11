@@ -1,5 +1,6 @@
 ---
 title: "Амстердам"
+coordinates: [52.37403, 4.88969]
 country: "Нидерланды"
 date: "2025-02-16"
 rating: 5

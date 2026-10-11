@@ -1,5 +1,6 @@
 ---
 title: "Днепр"
+coordinates: [48.46664, 35.04066]
 country: "Украина"
 date: "2025-02-26"
 rating: 4

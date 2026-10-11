@@ -5,7 +5,7 @@ const encodePath = path => path.split('/').map(encodeURIComponent).join('/');
 export const isLocal = LOCAL;
 export const sessionKey = 'kaban-author-session';
 export function validPath(path) {
-  return /^src\/content\/blog\/[\p{L}\p{N}_-]+\/index\.md$/u.test(path);
+  return path === 'src/content/pages/now/index.md' || /^src\/content\/blog\/[\p{L}\p{N}_-]+\/index\.md$/u.test(path);
 }
 export function encodeText(text) {
   return btoa(Array.from(new TextEncoder().encode(text), byte => String.fromCharCode(byte)).join(''));
@@ -42,7 +42,7 @@ export class AuthorAPI {
     const repo = await this.github(`repos/${REPO}`);
     if (user?.login?.toLowerCase() !== OWNER || !repo?.permissions?.push) throw new Error('Режим автора доступен только владельцу блога.');
   }
-  branch(path) { return `codex/author/${path.split('/')[3]}`; }
+  branch(path) { return path.includes('/pages/') ? 'codex/author-pages/now' : `codex/author/${path.split('/')[3]}`; }
   async read(path) {
     if (!validPath(path)) throw new Error('Некорректный адрес записи.');
     if (this.session.type === 'local') {
@@ -56,9 +56,13 @@ export class AuthorAPI {
     return { raw: entry ? decodeText(entry.content) : '', sha: entry?.sha || null, branch: ref, commit: draft?.object.sha };
   }
   async drafts() {
-    if (this.session.type === 'local') return (await this.proxy('entriesByFolder', { folder: 'src/content/blog', extension: 'md', depth: 3 })).map(item => ({path: item.file.path, raw: item.data}));
-    const refs = await this.github(`repos/${REPO}/git/matching-refs/heads/codex/author/`);
-    return (refs || []).map(ref => ({ path: `src/content/blog/${ref.ref.split('/').at(-1)}/index.md` }));
+    if (this.session.type === 'local') {
+      const items=await this.proxy('entriesByFolder', { folder: 'src/content/blog', extension: 'md', depth: 3 });
+      const pages=await this.proxy('entriesByFolder', { folder: 'src/content/pages', extension: 'md', depth: 3 });
+      return [...items,...pages].map(item=>({path:item.file.path,raw:item.data}));
+    }
+    const refs = await this.github(`repos/${REPO}/git/matching-refs/heads/codex/author`);
+    return (refs || []).filter(ref=>ref.ref.startsWith('refs/heads/codex/author/')||ref.ref==='refs/heads/codex/author-pages/now').map(ref => ({ path: ref.ref==='refs/heads/codex/author-pages/now' ? 'src/content/pages/now/index.md' : `src/content/blog/${ref.ref.split('/').at(-1)}/index.md` }));
   }
   async save(path, raw, snapshot, assets, publish) {
     await this.verify();

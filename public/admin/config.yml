@@ -33,6 +33,18 @@ slug:
 show_preview_links: false
 
 collections:
+  - name: pages
+    label: "Страницы"
+    files:
+      - name: now
+        label: "Сейчас"
+        file: "src/content/pages/now/index.md"
+        fields:
+          - { label: "Заголовок", name: "title", widget: "string" }
+          - { label: "Описание", name: "description", widget: "text" }
+          - { label: "Дата обновления", name: "updated", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false }
+          - { label: "Текст", name: "body", widget: "markdown" }
+
   # Blog Posts
   - name: blog
     label: "Записи"
@@ -56,7 +68,7 @@ collections:
         pattern: false
     fields:
       - { label: "Заголовок", name: "title", widget: "string", required: true }
-      - { label: "Текст", name: "body", widget: "markdown", hint: "Пиши как в обычном редакторе. Фотографии добавляются через кнопку изображения." }
+      - { label: "Текст", name: "body", widget: "markdown", hint: "В Markdown можно использовать :::details Заголовок … :::, сноски [^note] с пояснением [^note]: Текст, и полный URL отдельным абзацем для карточки. Примеры есть в подсказке встроенного редактора." }
       - { label: "Короткое описание", name: "description", widget: "text", required: true, hint: "Одно-два предложения для превью и поисковиков." }
       - { label: "Дата", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
       - { label: "Скрыть с сайта", name: "draft", widget: "boolean", default: false, required: false, hint: "Это отдельный переключатель видимости. Неопубликованные черновики сохраняются кнопкой редактора." }
@@ -140,6 +152,14 @@ collections:
       - { label: "Название страны", name: "country", widget: "string", required: true, hint: "Полное название по-русски, например Германия" }
       - { label: "Фотография для раздела Мир", name: "photo", widget: "string", required: false, hint: "Путь к фотографии относительно файла города, например ../blog/italy/italy.jpg" }
       - { label: "Описание фотографии", name: "photoAlt", widget: "string", required: false }
+      - label: "Координаты вручную — необязательно"
+        name: "coordinates"
+        widget: "list"
+        required: false
+        min: 2
+        max: 2
+        hint: "Оставь пустым: при публикации карта найдёт город по названию и стране. Заполняй только для уточнения места: сначала широта, затем долгота. Например, Рапалло: 44.3496 и 9.22796."
+        field: { label: "Координата", name: "value", widget: "number", value_type: "float" }
       - { label: "Дата поездки", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
       - { label: "Оценка", name: "rating", widget: "number", value_type: "int", min: 1, max: 5, step: 1, required: true }
       - { label: "Черновик", name: "draft", widget: "boolean", default: false, required: false }

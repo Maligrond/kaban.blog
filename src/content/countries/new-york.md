@@ -2,6 +2,7 @@
 title: "Нью-Йорк"
 photo: ../blog/italy/usa.jpg
 photoAlt: Нью-Йорк
+coordinates: [40.71427, -74.00597]
 country: "США"
 date: "2025-01-18"
 rating: 5

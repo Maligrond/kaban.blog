@@ -1,5 +1,6 @@
 ---
 title: "Эдмонтон"
+coordinates: [53.55014, -113.46871]
 country: "Канада"
 date: "2025-02-15"
 rating: 4

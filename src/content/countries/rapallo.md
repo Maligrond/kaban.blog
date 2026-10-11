@@ -2,6 +2,7 @@
 title: "Рапалло"
 photo: ../blog/italy/italy.jpg
 photoAlt: Рапалло, Италия
+coordinates: [44.3496, 9.22796]
 country: "Италия"
 date: "2025-02-09"
 rating: 4

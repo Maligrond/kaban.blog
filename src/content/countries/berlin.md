@@ -1,5 +1,6 @@
 ---
 title: "Берлин"
+coordinates: [52.52437, 13.41053]
 country: "Германия"
 date: "2025-01-14"
 rating: 5

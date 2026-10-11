@@ -30,7 +30,7 @@ const sortedPosts = posts.sort(
 
 <Layout title={`Тег: ${id}`} description={`Записи с тегом «${id}»`}>
   <Container>
-    <div class="journal-page topic-page" data-pagefind-ignore>
+    <div class="journal-page topic-page" data-pagefind-ignore data-author-tag={id}>
       <div class="journal-page-heading">
         <a class="back-to-notes" href="/tags/">← Все темы</a>
         <h1>{id}<span class="accent-dot">.</span></h1>

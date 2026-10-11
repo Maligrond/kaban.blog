@@ -1,7 +1,7 @@
 import { markdownPhotos, photoMarkdown, replacePhoto, removePhoto, reorderPhotos } from './author-photos.js';
 import { postSummary } from '../lib/post-text.js';
 import { parseDocument } from 'yaml';
-import { marked } from 'marked';
+import { renderPostPreview } from '../lib/post-preview.js';
 import DOMPurify from 'dompurify';
 import NetlifyAuth from 'netlify-auth-providers';
 import { AuthorAPI, sessionKey, isLocal, validPath } from './author-api.js';
@@ -57,6 +57,11 @@ export async function activateAuthor() {
     tools.append(button('Новая запись',()=>openEditor(null)));
     const path = document.querySelector('[data-author-path]')?.getAttribute('data-author-path');
     if (path && validPath(path)) tools.append(button('Редактировать',()=>openEditor(path)));
+    const tag = document.querySelector('[data-author-tag]')?.getAttribute('data-author-tag');
+    if (tag) tools.append(button('Править тему',async()=>{
+      const { openTagEditor } = await import('./author-tag-editor.js');
+      await openTagEditor(api, tag);
+    }));
     tools.append(button('Черновики',openDrafts));
     tools.append(button('Выйти',()=>{
       sessionStorage.removeItem(sessionKey); api = null; tools.remove();
@@ -153,19 +158,21 @@ async function openEditor(path) {
       const input = create(tag,{name,...(tag==='input'?{type}:{})}); input.value = value;
       wrapper.append(input); form.append(wrapper); return input;
     }
+    const isPage = path === 'src/content/pages/now/index.md';
     const title = field('Заголовок','title',doc.get('title') || ''); title.required=true;
     const text = field('Текст','body',body,'textarea'); text.rows=16;
     const meta = create('div',{class:'author-meta-fields'});
     const tags = field('Теги через запятую','tags',(doc.get('tags')?.toJSON?.() || []).join(', '));
-    const date = field('Дата','date',dateValue(doc.get('date')),'input','date'); date.required=true;
+    const date = field(isPage ? 'Дата обновления' : 'Дата','date',dateValue(doc.get(isPage ? 'updated' : 'date')),'input','date'); date.required=true;
     const description = field('Короткое описание','description',doc.get('descriptionAutomatic') ? '' : doc.get('description') || '','textarea'); description.rows=2; description.placeholder=postSummary(body) || 'Заполнится по первому абзацу';
     [tags,date,description].forEach(input=>meta.append(input.parentElement));
     const slug = field('Адрес записи','slug',path ? path.split('/')[3] : ''); slug.placeholder='Заполнится по заголовку';
     if (path) slug.readOnly=true;
     meta.append(slug.parentElement);
+    if(isPage) { tags.parentElement.hidden=true; slug.parentElement.hidden=true; }
     const settings = create('details',{class:'author-settings'});
-    settings.append(create('summary',{},'Теги и настройки записи'),meta);
-    meta.append(create('p',{class:'author-photo-hint'},'Адрес и описание заполняются автоматически. Здесь можно задать свои.'));
+    settings.append(create('summary',{},isPage ? 'Настройки страницы' : 'Теги и настройки записи'),meta);
+    meta.append(create('p',{class:'author-photo-hint'},isPage ? 'Обнови дату, когда меняешь страницу. Описание используется в поиске и превью ссылки.' : 'Адрес и описание заполняются автоматически. Здесь можно задать свои.'));
     form.append(settings);
     const assets = [];
     let galleryUpload = false;
@@ -180,7 +187,7 @@ async function openEditor(path) {
     formatBar.append(button('Жирный',()=>insert('**текст**')),button('Ссылка',()=>insert('[текст](https://)')),button('Фотографии',()=>{galleryUpload=false;mediaInput.click();}),button('Галерея',()=>{galleryUpload=true;mediaInput.click();}));
     text.parentElement.before(formatBar); formatBar.append(mediaInput);
     const help=create('details',{class:'author-format-help'});
-    help.append(create('summary',{},'Как оформить текст и добавить видео'));
+    help.append(create('summary',{},'Как оформить текст, ссылки и фотографии'));
     help.append(create('p',{},'Поставь команду на отдельной строке перед абзацем. После абзаца оставь пустую строку.'));
     const examples=[
       ['.lead','Вступление — чуть крупнее обычного текста.'],
@@ -197,6 +204,13 @@ async function openEditor(path) {
     help.append(create('pre',{},'https://www.youtube.com/watch?v=…'));
     help.append(create('p',{},'Подпись фотографии пишется в кавычках после адреса. Для галереи расположи снимки на соседних строках без пустой строки между ними.'));
     help.append(create('pre',{},'![Описание](photo.jpg "Подпись фотографии")'));
+    for(const [label,example] of [
+      ['Подробности: заголовок остаётся видимым, текст раскрывается по нажатию.', ':::details Подробнее\n\nЗдесь можно писать обычный **Markdown**.\n\n:::'],
+      ['Сноска: номер в тексте ведёт к пояснению внизу, стрелка возвращает обратно.', 'Текст со сноской[^note].\n\n[^note]: Пояснение.'],
+      ['Карточка ссылки: поставь полный адрес отдельным абзацем. Заголовок и картинка подтянутся при сборке; новая ссылка в предпросмотре пока покажет только адрес.', 'https://blogengine.ru/'],
+    ]) {
+      help.append(create('p',{},label),create('pre',{},example));
+    }
     formatBar.after(help);
     const preview = create('section',{class:'author-preview',hidden:'','aria-label':'Предпросмотр записи'});
     const previewHeading = create('div',{class:'post-heading blog-post-heading'});
@@ -217,10 +231,12 @@ async function openEditor(path) {
     flushRecovery = () => {if(editor.dataset.dirty==='true') {clearTimeout(autosaveTimer);persistRecovery();}};
     const actions = create('div',{class:'author-editor-actions'});
     let imageMap = {};
+    let linkPreviews = {};
+    fetch('/admin/link-previews.json').then(r=>r.json()).then(map=>{linkPreviews=map;if(!preview.hidden)refreshPreview();}).catch(()=>{});
     fetch('/admin/media.json').then(r=>r.json()).then(map=>{imageMap=map;if(!preview.hidden)refreshPreview();}).catch(()=>{});
     function refreshPreview() {
       previewTitle.textContent=title.value.trim() || 'Без заголовка';
-      previewBody.innerHTML = DOMPurify.sanitize(marked.parse(text.value,{async:false}));
+      previewBody.innerHTML = DOMPurify.sanitize(renderPostPreview(text.value));
       const sourcePhotos=markdownPhotos(text.value);
       const available=[...sourcePhotos];
       previewBody.querySelectorAll('img').forEach(img=>{
@@ -234,7 +250,7 @@ async function openEditor(path) {
         const key=new URL(src,'https://preview.invalid/'+targetPath).pathname.slice(1);
         if(imageMap[decodeURIComponent(key)]) img.src=imageMap[decodeURIComponent(key)];
       });
-      enhancePost(previewBody);
+      enhancePost(previewBody,linkPreviews);
       layoutPreviewPhotos(previewBody); initializeGalleries(previewBody);
       previewMeta.replaceChildren();
       const chosenDate=new Date(date.value+'T00:00:00Z');
@@ -403,7 +419,7 @@ async function openEditor(path) {
       try {
         doc.set('title',title.value.trim()); doc.set('description',description.value.trim() || postSummary(text.value) || title.value.trim());
         if(description.value.trim())doc.delete('descriptionAutomatic');else doc.set('descriptionAutomatic',true);
-        doc.set('date',date.value); doc.set('tags',tags.value.split(',').map(t=>t.trim()).filter(Boolean)); doc.set('draft',!publish);
+        doc.set(isPage ? 'updated' : 'date',date.value); if(!isPage) doc.set('tags',tags.value.split(',').map(t=>t.trim()).filter(Boolean)); doc.set('draft',!publish);
         const raw=`---\n${doc.toString()}---\n\n${text.value}\n`;
         const usedPhotos=markdownPhotos(text.value);
         const staged=assets.filter(asset=>usedPhotos.some(photo=>photo.src===asset.name)).map(asset=>({path:targetPath.slice(0,targetPath.lastIndexOf('/')+1)+asset.name,content:asset.content}));

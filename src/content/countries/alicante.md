@@ -1,5 +1,6 @@
 ---
 title: "Аликанте"
+coordinates: [38.34517, -0.48149]
 country: "Испания"
 date: "2025-01-30"
 rating: 4

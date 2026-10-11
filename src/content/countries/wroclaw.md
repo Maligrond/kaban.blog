@@ -1,5 +1,6 @@
 ---
 title: "Вроцлав"
+coordinates: [51.10286, 17.03006]
 country: "Польша"
 date: "2025-02-19"
 rating: 5

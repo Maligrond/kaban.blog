@@ -1,5 +1,4 @@
-import { satteri } from "@astrojs/markdown-satteri";
-import { postFormat } from "./src/lib/post-format.js";
+import { postProcessor } from "./src/lib/post-processor.js";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "astro/config";
 
@@ -23,7 +22,7 @@ export default defineConfig({
     ],
   } })],
   markdown: {
-    processor: satteri({ mdastPlugins: [postFormat] }),
+    processor: postProcessor(),
     shikiConfig: {
       theme: "css-variables",
     },

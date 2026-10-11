@@ -1,5 +1,6 @@
 ---
 title: "Бургас"
+coordinates: [42.50651, 27.46886]
 country: "Болгария"
 date: "2025-01-21"
 rating: 3

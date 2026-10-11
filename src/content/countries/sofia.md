@@ -1,5 +1,6 @@
 ---
 title: "София"
+coordinates: [42.69751, 23.32415]
 country: "Болгария"
 date: "2025-01-22"
 rating: 4

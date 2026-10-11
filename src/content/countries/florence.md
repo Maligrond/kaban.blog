@@ -1,5 +1,6 @@
 ---
 title: "Флоренция"
+coordinates: [43.77925, 11.24626]
 country: "Италия"
 date: "2025-02-10"
 rating: 5

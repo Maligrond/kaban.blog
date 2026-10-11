@@ -1,5 +1,6 @@
 ---
 title: "Аланья"
+coordinates: [36.54375, 31.99982]
 country: "Турция"
 date: "2025-02-22"
 rating: 4

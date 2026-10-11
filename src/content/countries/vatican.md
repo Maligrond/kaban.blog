@@ -1,5 +1,6 @@
 ---
 title: "Ватикан"
+coordinates: [41.90268, 12.45414]
 country: "Ватикан"
 date: "2025-01-23"
 rating: 5

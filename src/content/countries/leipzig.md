@@ -1,5 +1,6 @@
 ---
 title: "Лейпциг"
+coordinates: [51.33962, 12.37129]
 country: "Германия"
 date: "2025-01-26"
 rating: 4
