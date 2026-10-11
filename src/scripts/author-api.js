@@ -53,7 +53,7 @@ export class AuthorAPI {
     const draft = await this.github(`repos/${REPO}/git/ref/heads/${branch}`);
     const ref = draft ? branch : 'main';
     const entry = await this.github(`repos/${REPO}/contents/${encodePath(path)}?ref=${encodeURIComponent(ref)}`);
-    return { raw: entry ? decodeText(entry.content) : '', sha: entry?.sha || null, branch: ref };
+    return { raw: entry ? decodeText(entry.content) : '', sha: entry?.sha || null, branch: ref, commit: draft?.object.sha };
   }
   async drafts() {
     if (this.session.type === 'local') return (await this.proxy('entriesByFolder', { folder: 'src/content/blog', extension: 'md', depth: 3 })).map(item => ({path: item.file.path, raw: item.data}));
@@ -78,20 +78,48 @@ export class AuthorAPI {
     const branchEntry = await this.github(`repos/${REPO}/contents/${encodePath(path)}?ref=${encodeURIComponent(branch)}`);
     if ((branchEntry?.sha || null) !== snapshot.sha) throw new Error("Запись изменилась во время сохранения. Открой её заново.");
     const head = await this.github(`repos/${REPO}/git/commits/${ref.object.sha}`);
-    const treeItems = [{ path, mode: '100644', type: 'blob', content: raw }];
+    const contentBlob = await this.github(`repos/${REPO}/git/blobs`, 'POST', { content: raw, encoding: 'utf-8' });
+    const treeItems = [{ path, mode: '100644', type: 'blob', sha: contentBlob.sha }];
     for (const asset of assets) {
       const blob = await this.github(`repos/${REPO}/git/blobs`, 'POST', { content: asset.content, encoding: 'base64' });
       treeItems.push({ path: asset.path, mode: '100644', type: 'blob', sha: blob.sha });
     }
     const tree = await this.github(`repos/${REPO}/git/trees`, 'POST', { base_tree: head.tree.sha, tree: treeItems });
     const commit = await this.github(`repos/${REPO}/git/commits`, 'POST', { message: `${publish ? 'Публикация' : 'Черновик'}: ${path.split('/')[3]}`, tree: tree.sha, parents: [ref.object.sha] });
-    const updated = await this.github(`repos/${REPO}/git/refs/heads/${branch}`, 'PATCH', { sha: commit.sha, force: false });
-    if (!updated) throw new Error('Не удалось сохранить ветку черновика.');
-    if (publish) {
-      const merged = await this.github(`repos/${REPO}/merges`, 'POST', { base: 'main', head: branch, commit_message: `Опубликована запись ${path.split('/')[3]}` });
-      if (!merged) throw new Error('Публикация не завершена. Черновик сохранён.');
-      await this.github(`repos/${REPO}/git/refs/heads/${branch}`, 'DELETE');
+    const saved = { raw, sha: contentBlob.sha, branch, commit: commit.sha, publication: 'draft' };
+    try {
+      const updated = await this.github(`repos/${REPO}/git/refs/heads/${branch}`, 'PATCH', { sha: commit.sha, force: false });
+      if (!updated) throw new Error('Не удалось сохранить ветку черновика.');
+    } catch (error) {
+      // A lost response must not make an already saved draft look unsaved.
+      let confirmed;
+      try { confirmed = await this.github(`repos/${REPO}/git/ref/heads/${branch}`); } catch { /* Keep the browser recovery copy. */ }
+      if (confirmed?.object.sha !== commit.sha) throw error;
     }
-    return this.read(path);
+    return publish ? this.publish(path, saved) : saved;
+  }
+  async publish(path, snapshot) {
+    if (!validPath(path) || this.session.type !== 'github') throw new Error('Некорректный черновик.');
+    const pending = { ...snapshot, publication: 'pending' };
+    try {
+      await this.verify();
+      const branch = this.branch(path);
+      const ref = await this.github(`repos/${REPO}/git/ref/heads/${branch}`);
+      if (!ref || ref.object.sha !== snapshot.commit) throw new Error('Черновик изменился в другом окне. Открой актуальную запись перед публикацией.');
+      // Publish exactly the saved revision, never another editor's new branch head.
+      const merged = await this.github(`repos/${REPO}/merges`, 'POST', { base: 'main', head: snapshot.commit, commit_message: `Опубликована запись ${path.split('/')[3]}` });
+      if (!merged) throw new Error('GitHub не подтвердил публикацию.');
+    } catch (error) {
+      // The merge may have succeeded even when its response was lost.
+      let comparison;
+      try { comparison = await this.github(`repos/${REPO}/compare/main...${snapshot.commit}`); } catch { /* Retry remains available. */ }
+      if (!comparison || !['identical','behind'].includes(comparison.status)) return { ...pending, publicationError: error.message };
+    }
+    // Cleanup is optional: failure here must not undo successful publication.
+    try {
+      const ref = await this.github(`repos/${REPO}/git/ref/heads/${this.branch(path)}`);
+      if (ref?.object.sha === snapshot.commit) await this.github(`repos/${REPO}/git/refs/heads/${this.branch(path)}`, 'DELETE');
+    } catch { /* The already published revision remains safe in main. */ }
+    return { ...snapshot, branch: 'main', publication: 'published', publicationError: undefined };
   }
 }

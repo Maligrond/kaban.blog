@@ -17,11 +17,16 @@ import "@pagefind/default-ui/css/ui.css";
 </dialog>
 
 <script>
+  import { escapeHTML } from "../lib/post-text.js";
   import { PagefindUI } from "@pagefind/default-ui";
   function initializeSearch() {
     const search = document.querySelector("#search");
     if (!search || search.querySelector("input")) return;
-    new PagefindUI({ element: "#search", showImages: false, excerptLength: 15, resetStyles: false, translations: {
+    new PagefindUI({ element: "#search", showImages: false, showSubResults: false, excerptLength: 20,
+      processResult: (result) => {
+        const { description, ...meta } = result.meta;
+        return { ...result, meta, excerpt: description ? escapeHTML(description) : result.excerpt };
+      }, resetStyles: false, translations: {
       search_label: "Поиск по сайту", placeholder: "Что найти?", clear_search: "Очистить", searching: "Ищем…",
       zero_results: "По запросу «[SEARCH_TERM]» ничего не найдено",
       one_result: "Найдено: [COUNT] по запросу «[SEARCH_TERM]»",
@@ -141,4 +146,9 @@ import "@pagefind/default-ui/css/ui.css";
   #search .pagefind-ui__result-excerpt { min-width: 0; margin-top: 6px; font: 16px/1.5 Georgia, serif; overflow-wrap: anywhere; }
   #search .pagefind-ui__button { margin-top: 16px; font-size: 15px; font-weight: normal; }
   #search mark { background: color-mix(in srgb, var(--journal-accent), transparent 87%); color: inherit; }
+</style>
+
+<style is:global>
+  #search .pagefind-ui__result-tags { margin-top: 7px; gap: 8px; }
+  #search .pagefind-ui__result-tag { padding: 0; color: var(--journal-muted); font-size: 13px; background: transparent; }
 </style>

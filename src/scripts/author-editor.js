@@ -1,3 +1,5 @@
+import { markdownPhotos, photoMarkdown, replacePhoto, removePhoto, reorderPhotos } from './author-photos.js';
+import { postSummary } from '../lib/post-text.js';
 import { parseDocument } from 'yaml';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -121,6 +123,8 @@ async function openEditor(path) {
     await api.verify();
     let snapshot = path ? await api.read(path) : {raw:'',sha:null};
     const {doc,body} = splitContent(snapshot.raw);
+    if(!snapshot.raw && doc.contents)doc.contents.flow=false;
+    if(snapshot.commit && snapshot.branch!=='main' && doc.get('draft')===false)snapshot.publication='pending';
     let recoveryKey = `${api.session.type}:${path || 'new'}`;
     let cachedDraft;
     try { cachedDraft = await draftStorage('get', recoveryKey); } catch { /* Editing stays available if storage is disabled. */ }
@@ -138,6 +142,7 @@ async function openEditor(path) {
       assets.forEach(asset=>URL.revokeObjectURL(asset.url));
       flushRecovery = null;
       activeEditor = null; editor.remove(); main.append(original);
+      document.dispatchEvent(new Event('kaban:photos-changed'));
     };
     top.append(button('← Вернуться к записи',close),create('span',{class:'author-identity'},api.session.type === 'local' ? 'Сохраняется на этом компьютере' : 'Сохраняется в GitHub'));
     editor.append(top);
@@ -153,12 +158,15 @@ async function openEditor(path) {
     const meta = create('div',{class:'author-meta-fields'});
     const tags = field('Теги через запятую','tags',(doc.get('tags')?.toJSON?.() || []).join(', '));
     const date = field('Дата','date',dateValue(doc.get('date')),'input','date'); date.required=true;
-    const description = field('Короткое описание','description',doc.get('description') || '','textarea'); description.rows=2; description.required=true;
+    const description = field('Короткое описание','description',doc.get('descriptionAutomatic') ? '' : doc.get('description') || '','textarea'); description.rows=2; description.placeholder=postSummary(body) || 'Заполнится по первому абзацу';
     [tags,date,description].forEach(input=>meta.append(input.parentElement));
-    const slug = field('Адрес записи','slug',path ? path.split('/')[3] : ''); slug.required=true;
+    const slug = field('Адрес записи','slug',path ? path.split('/')[3] : ''); slug.placeholder='Заполнится по заголовку';
     if (path) slug.readOnly=true;
     meta.append(slug.parentElement);
-    form.append(meta);
+    const settings = create('details',{class:'author-settings'});
+    settings.append(create('summary',{},'Теги и настройки записи'),meta);
+    meta.append(create('p',{class:'author-photo-hint'},'Адрес и описание заполняются автоматически. Здесь можно задать свои.'));
+    form.append(settings);
     const assets = [];
     let galleryUpload = false;
     let autosaveTimer;
@@ -190,12 +198,18 @@ async function openEditor(path) {
     help.append(create('p',{},'Подпись фотографии пишется в кавычках после адреса. Для галереи расположи снимки на соседних строках без пустой строки между ними.'));
     help.append(create('pre',{},'![Описание](photo.jpg "Подпись фотографии")'));
     formatBar.after(help);
-    const preview = create('div',{class:'author-preview post-content blog-post-content post-photo-content',hidden:''});
+    const preview = create('section',{class:'author-preview',hidden:'','aria-label':'Предпросмотр записи'});
+    const previewHeading = create('div',{class:'post-heading blog-post-heading'});
+    const previewTitle = create('h1'); previewHeading.append(previewTitle);
+    const previewArticle = create('article',{class:'post-content blog-post-content'});
+    const previewBody = create('div',{class:'post-photo-content'});
+    const previewMeta = create('div',{class:'post-details post-meta-strip not-prose','aria-label':'Дата и темы записи'});
+    previewArticle.append(previewBody,previewMeta); preview.append(previewHeading,previewArticle);
     const status = create('p',{class:'author-status',role:'status','aria-live':'polite'});
     const recoveryStatus = create('p',{class:'author-status author-recovery-status',role:'status'},'Текст и фотографии автоматически сохраняются в этом браузере.');
     async function persistRecovery() {
       const value = {fields:Object.fromEntries([title,text,tags,date,description,slug].map(input=>[input.name,input.value])),
-        assets:assets.map(({name,content})=>({name,content})), sha:snapshot.sha, savedAt:Date.now()};
+        assets:assets.map(({name,content})=>({name,content})), sha:snapshot.sha, manualSlug:!!slug.dataset.manual, savedAt:Date.now()};
       recoveryQueue = recoveryQueue.catch(()=>{}).then(()=>draftStorage('put',recoveryKey,value));
       try { await recoveryQueue; recoveryStatus.textContent='Сохранено в браузере · ' + new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}); }
       catch { recoveryStatus.textContent='Не удалось сохранить в браузере. Сохрани черновик перед закрытием.'; }
@@ -203,10 +217,15 @@ async function openEditor(path) {
     flushRecovery = () => {if(editor.dataset.dirty==='true') {clearTimeout(autosaveTimer);persistRecovery();}};
     const actions = create('div',{class:'author-editor-actions'});
     let imageMap = {};
-    fetch('/admin/media.json').then(r=>r.json()).then(map=>{imageMap=map;}).catch(()=>{});
+    fetch('/admin/media.json').then(r=>r.json()).then(map=>{imageMap=map;if(!preview.hidden)refreshPreview();}).catch(()=>{});
     function refreshPreview() {
-      preview.innerHTML = DOMPurify.sanitize(marked.parse(text.value,{async:false}));
-      preview.querySelectorAll('img').forEach(img=>{
+      previewTitle.textContent=title.value.trim() || 'Без заголовка';
+      previewBody.innerHTML = DOMPurify.sanitize(marked.parse(text.value,{async:false}));
+      const sourcePhotos=markdownPhotos(text.value);
+      const available=[...sourcePhotos];
+      previewBody.querySelectorAll('img').forEach(img=>{
+        const match=available.findIndex(photo=>photo.src===img.getAttribute('src'));
+        if(match>=0) {const photo=available.splice(match,1)[0];img.dataset.authorPhoto=String(sourcePhotos.indexOf(photo));}
         const src=img.getAttribute('src');
         const asset=assets.find(a=>a.name===src);
         if(asset) {img.src=asset.url;return;}
@@ -215,19 +234,101 @@ async function openEditor(path) {
         const key=new URL(src,'https://preview.invalid/'+targetPath).pathname.slice(1);
         if(imageMap[decodeURIComponent(key)]) img.src=imageMap[decodeURIComponent(key)];
       });
-      enhancePost(preview);
-      layoutPreviewPhotos(preview); initializeGalleries(preview);
+      enhancePost(previewBody);
+      layoutPreviewPhotos(previewBody); initializeGalleries(previewBody);
+      previewMeta.replaceChildren();
+      const chosenDate=new Date(date.value+'T00:00:00Z');
+      if(!Number.isNaN(chosenDate.valueOf()))previewMeta.append(create('time',{datetime:chosenDate.toISOString()},new Intl.DateTimeFormat('ru',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(chosenDate).replace(/\s*г\.$/,'')));
+      const list=create('ul',{class:'post-tags','aria-label':'Темы записи'});
+      tags.value.split(',').map(tag=>tag.trim()).filter(Boolean).forEach(tag=>{const item=create('li');item.append(create('span',{class:'post-tag'},tag));list.append(item);});
+      if(list.childElementCount)previewMeta.append(list);
       document.dispatchEvent(new Event('kaban:photos-changed'));
+      initializePhotoEditing(sourcePhotos);
+    }
+    function updatePhotoText(value) {
+      text.value=value; text.dispatchEvent(new Event('input',{bubbles:true}));
+    }
+    function initializePhotoEditing(sourcePhotos) {
+      previewBody.querySelectorAll('img[data-author-photo]').forEach(image=>{
+        const photo=sourcePhotos[Number(image.dataset.authorPhoto)];
+        const frame=image.closest('.post-photo') || image.closest('.photo-trigger') || image.closest('a') || image;
+        const tools=create('div',{class:'author-photo-tools','aria-label':'Действия с фотографией'});
+        tools.append(button('Подпись',async()=>{
+          const original=text.value;
+          const result=await photoDetails([{url:image.src,alt:photo.alt,caption:photo.caption}],true);
+          if(!result)return;
+          if(text.value!==original){status.textContent='Текст изменился. Открой подпись заново.';return;}
+          updatePhotoText(replacePhoto(original,photo,photoMarkdown({...photo,...result[0]})));
+          status.textContent='Подпись обновлена.';
+        }),button('Удалить',()=>{
+          const original=text.value;
+          const removed=removePhoto(original,photo);
+          updatePhotoText(removed);
+          status.replaceChildren(create('span',{},'Фотография удалена из записи. '),button('Отменить',()=>{
+            if(text.value!==removed){status.textContent='Текст уже изменился. Верни фотографию в поле текста.';return;}
+            updatePhotoText(original);status.textContent='Фотография возвращена.';
+          }));
+        }));
+        if(frame.classList.contains('post-photo'))frame.append(tools);
+        else frame.after(tools);
+      });
+      previewBody.querySelectorAll('.gallery-track').forEach(track=>{
+        const frames=Array.from(track.querySelectorAll(':scope > .post-photo'));
+        const photos=frames.map(frame=>sourcePhotos[Number(frame.querySelector('img')?.dataset.authorPhoto)]);
+        if(photos.some(photo=>!photo))return;
+        let dragged=-1;
+        const move=(from,to)=>{updatePhotoText(reorderPhotos(text.value,photos,from,to));status.textContent='Порядок фотографий изменён.';};
+        frames.forEach((frame,index)=>{
+          const tools=frame.querySelector('.author-photo-tools');
+          const handle=create('button',{type:'button',class:'author-photo-move',draggable:'true','aria-label':'Перетащить фотографию'},'Переставить');
+          handle.addEventListener('dragstart',event=>{dragged=index;event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain','kaban-photo');frame.classList.add('author-photo-dragging');});
+          handle.addEventListener('dragend',()=>{dragged=-1;frame.classList.remove('author-photo-dragging');});
+          frame.addEventListener('dragover',event=>{if(dragged<0)return;event.preventDefault();event.dataTransfer.dropEffect='move';});
+          frame.addEventListener('drop',event=>{if(dragged<0)return;event.preventDefault();event.stopPropagation();const from=dragged;dragged=-1;move(from,index);});
+          tools.prepend(handle);
+          const previous=button('←',()=>move(index,index-1));previous.setAttribute('aria-label','Переместить фотографию раньше');previous.disabled=index===0;
+          const next=button('→',()=>move(index,index+1));next.setAttribute('aria-label','Переместить фотографию позже');next.disabled=index===frames.length-1;
+          tools.append(previous,next);
+        });
+      });
     }
     const toggle = button('Предпросмотр',()=>{
       const showing = preview.hidden;
       preview.hidden=!showing; text.parentElement.hidden=showing; formatBar.hidden=showing;
-      toggle.textContent=showing?'Редактировать текст':'Предпросмотр';
+      title.parentElement.hidden=showing; help.hidden=showing; settings.hidden=showing;
+      toggle.textContent=showing?'Вернуться к редактированию':'Предпросмотр';
+      toggle.setAttribute('aria-pressed',String(showing));
       if(showing) refreshPreview();
     });
-    form.addEventListener('input',()=>{editor.dataset.dirty='true'; clearTimeout(autosaveTimer); autosaveTimer=setTimeout(persistRecovery,400); if(!preview.hidden)refreshPreview();});
+    form.addEventListener('input',()=>{description.placeholder=postSummary(text.value) || 'Заполнится по первому абзацу';editor.dataset.dirty='true'; clearTimeout(autosaveTimer); autosaveTimer=setTimeout(persistRecovery,400); if(!preview.hidden)refreshPreview();});
     title.addEventListener('input',()=>{if(!path && !slug.dataset.manual)slug.value=slugify(title.value);});
-    slug.addEventListener('input',()=>{slug.dataset.manual='true';});
+    slug.addEventListener('input',()=>{if(slug.value.trim())slug.dataset.manual='true';else {delete slug.dataset.manual;slug.value=slugify(title.value);}});
+    function photoDetails(additions, editing = false) {
+      return new Promise(resolve=>{
+        const dialog=create('dialog',{class:'author-photo-dialog','aria-label':'Подписи фотографий'});
+        dialog.append(create('h2',{},editing?'Подпись фотографии':additions.length===1?'Добавить фотографию':'Добавить фотографии'),create('p',{class:'author-photo-hint'},'Подпись появится под снимком. Описание помогает тем, кто пользуется экранным диктором.'));
+        const fields=additions.map((asset,index)=>{
+          const row=create('div',{class:'author-photo-row'});
+          row.append(create('img',{src:asset.url,alt:'',loading:'lazy'}));
+          const inputs=create('div');
+          function input(label,value) {
+            const wrapper=create('label',{class:'author-field'});wrapper.append(create('span',{},label));
+            const control=create('input',{type:'text'});control.value=value;wrapper.append(control);inputs.append(wrapper);return control;
+          }
+          const caption=input('Подпись',asset.caption || '');
+          const alt=input('Описание снимка',asset.alt ?? (asset.originalName?.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ') || `Фотография ${index+1}`));
+          row.append(inputs);dialog.append(row);return {caption,alt};
+        });
+        let result=null;
+        const actions=create('div',{class:'author-editor-actions'});
+        actions.append(button('Отмена',()=>dialog.close()),button(editing?'Сохранить подпись':'Вставить',()=>{result=fields.map(({caption,alt})=>({caption:caption.value.trim(),alt:alt.value.trim()}));dialog.close();},true));
+        dialog.append(actions);dialog.addEventListener('close',()=>{dialog.remove();resolve(result);},{once:true});
+        dialog.addEventListener('cancel',()=>{result=null;});
+        document.body.append(dialog);dialog.showModal();fields[0]?.caption.focus();
+      });
+    }
+    const markdownLabel = value => value.replace(/\\/g,'\\\\').replace(/([\[\]])/g,'\\$1').replace(/\r?\n/g,' ');
+    const markdownCaption = value => value.replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\r?\n/g,' ');
     async function addPhotos(files, gallery = false) {
       if(uploading || saving) return;
       uploading=true; text.disabled=true;
@@ -245,13 +346,15 @@ async function openEditor(path) {
           const name=`photo-${crypto.randomUUID()}.${extension}`;
           const bytes=new Uint8Array(await file.arrayBuffer());
           let binary=''; for(const byte of bytes)binary+=String.fromCharCode(byte);
-          additions.push({name,content:btoa(binary),url:URL.createObjectURL(file)});
+          additions.push({name,originalName:file.name,content:btoa(binary),url:URL.createObjectURL(file)});
         }
+        const details=await photoDetails(additions);
+        if(!details) {additions.forEach(asset=>URL.revokeObjectURL(asset.url));status.textContent='Добавление фотографий отменено.';return;}
         assets.push(...additions);
         text.disabled=false;
         text.setSelectionRange(start,end);
-        insert('\n\n'+additions.map(asset=>`![Описание фотографии](${asset.name} "")`).join(gallery?'\n':'\n\n')+'\n\n');
-        status.textContent=gallery?'Галерея добавлена. Впиши подписи в кавычки после адресов фотографий.':'Фотографии добавлены. Подпись можно вписать в кавычки после адреса.';
+        insert('\n\n'+additions.map((asset,index)=>`![${markdownLabel(details[index].alt)}](${asset.name}${details[index].caption ? ' "'+markdownCaption(details[index].caption)+'"' : ''})`).join(gallery?'\n':'\n\n')+'\n\n');
+        status.textContent=gallery?'Галерея добавлена. Подписи видны в предпросмотре.':'Фотографии добавлены. Подписи видны в предпросмотре.';
         await persistRecovery();
       } catch(error) {status.textContent=error.message;}
       finally {uploading=false; text.disabled=false; formatBar.querySelectorAll('button').forEach(btn=>btn.disabled=false);top.querySelectorAll('button').forEach(btn=>btn.disabled=false);}
@@ -282,32 +385,49 @@ async function openEditor(path) {
     let saving=false;
     async function save(publish) {
       if(uploading) {status.textContent='Дождись добавления фотографий.';return;}
-      if(saving || !form.reportValidity()) return;
-      if(!title.value.trim() || !description.value.trim()) {status.textContent='Заполни заголовок и короткое описание.';return;}
+      if(saving) return;
+      if(!title.value.trim() || !date.validity.valid) {
+        if(!preview.hidden)toggle.click();
+        if(!date.validity.valid)settings.open=true;
+        status.textContent=!title.value.trim()?'Заполни заголовок.':'Выбери дату записи.';
+        (!title.value.trim()?title:date).focus();return;
+      }
+      if(!form.reportValidity()) return;
+      if(!slug.value.trim())slug.value=slugify(title.value);
       const targetPath=path || `src/content/blog/${slug.value}/index.md`;
       if(!validPath(targetPath)) {status.textContent='Адрес может содержать буквы, цифры и дефисы.';return;}
       saving=true; clearTimeout(autosaveTimer);
-      form.querySelectorAll('input,textarea,button').forEach(input=>input.disabled=true);
+      const disabledStates=Array.from(form.querySelectorAll('input,textarea,button')).map(input=>[input,input.disabled]);
+      disabledStates.forEach(([input])=>input.disabled=true);
       status.textContent=publish?'Публикую…':'Сохраняю черновик…';
       try {
-        doc.set('title',title.value.trim()); doc.set('description',description.value.trim());
+        doc.set('title',title.value.trim()); doc.set('description',description.value.trim() || postSummary(text.value) || title.value.trim());
+        if(description.value.trim())doc.delete('descriptionAutomatic');else doc.set('descriptionAutomatic',true);
         doc.set('date',date.value); doc.set('tags',tags.value.split(',').map(t=>t.trim()).filter(Boolean)); doc.set('draft',!publish);
         const raw=`---\n${doc.toString()}---\n\n${text.value}\n`;
-        const staged=assets.map(asset=>({path:targetPath.slice(0,targetPath.lastIndexOf('/')+1)+asset.name,content:asset.content}));
-        snapshot=await api.save(targetPath,raw,snapshot,staged,publish);
+        const usedPhotos=markdownPhotos(text.value);
+        const staged=assets.filter(asset=>usedPhotos.some(photo=>photo.src===asset.name)).map(asset=>({path:targetPath.slice(0,targetPath.lastIndexOf('/')+1)+asset.name,content:asset.content}));
+        snapshot=publish && snapshot.publication==='pending' && editor.dataset.dirty!=='true'
+          ? await api.publish(targetPath,snapshot)
+          : await api.save(targetPath,raw,snapshot,staged,publish);
         path=targetPath; slug.readOnly=true; editor.dataset.dirty='false';
         clearTimeout(autosaveTimer);
         await recoveryQueue.catch(()=>{});
         try { await draftStorage('delete',recoveryKey); } catch { /* A stale recovery copy is harmless. */ }
         recoveryKey=`${api.session.type}:${targetPath}`;
         recoveryStatus.textContent='Сохранено ' + (api.session.type==='local'?'в файле записи.':'в GitHub.');
-        status.textContent=api.session.type==='local'
+        publishButton.textContent=snapshot.publication==='pending'?'Повторить публикацию':'Опубликовать';
+        status.textContent=snapshot.publication==='pending'
+          ? `Черновик сохранён в GitHub. Публикация не завершена: ${snapshot.publicationError} Можно повторить публикацию.`
+          : api.session.type==='local'
           ? (publish?'Запись сохранена локально. На сайте появится после сборки; пуш выполняется отдельно.':'Черновик сохранён локально и скрыт с сайта.')
           : (publish?'Изменения отправлены в main. Запись появится после сборки Netlify.':'Черновик сохранён в GitHub. Посетители его не видят.');
       } catch(error) {status.textContent=error.message;}
-      finally {saving=false; form.querySelectorAll('input,textarea,button').forEach(input=>input.disabled=false);}
+      finally {saving=false; disabledStates.forEach(([input,disabled])=>{if(input.isConnected)input.disabled=disabled;});}
     }
-    actions.append(toggle,button('Сохранить черновик',()=>save(false)),button('Опубликовать',()=>save(true),true));
+    const publishButton=button(snapshot.publication==='pending'?'Повторить публикацию':'Опубликовать',()=>save(true),true);
+    form.addEventListener('input',()=>{publishButton.textContent='Опубликовать';});
+    actions.append(toggle,button('Сохранить черновик',()=>save(false)),publishButton);
     text.parentElement.after(preview);
     form.append(actions,status,recoveryStatus);
     if(cachedDraft?.fields) {
@@ -315,7 +435,7 @@ async function openEditor(path) {
       notice.append(create('p',{},cachedDraft.sha !== snapshot.sha ? 'Есть несохранённая копия. Запись изменилась после её создания — восстановление заменит текст в редакторе.' : 'Есть несохранённая копия этой записи в браузере.'));
       notice.append(button('Восстановить',()=>{
         [title,text,tags,date,description,slug].forEach(input=>{if(input!==slug || !path)input.value=cachedDraft.fields[input.name] ?? input.value;});
-        if(!path)slug.dataset.manual='true';
+        if(!path && cachedDraft.manualSlug)slug.dataset.manual='true';
         for(const asset of cachedDraft.assets || []) {
           const bytes=Uint8Array.from(atob(asset.content),c=>c.charCodeAt(0));
           assets.push({...asset,url:URL.createObjectURL(new Blob([bytes]))});

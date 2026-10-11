@@ -36,3 +36,68 @@ test('stale content is rejected before any GitHub mutation',async()=>{
   await assert.rejects(new AuthorAPI({type:'github',token:'test'}).save('src/content/blog/italian/index.md','changed',{sha:'old-sha'},[],false),/другом окне/);
   assert.deepEqual(mutations,[]);
 });
+
+function publishingAPI({mergeFails=false, mergeLost=false, patchLost=false, cleanupFails=false}={}) {
+  const api=new AuthorAPI({type:'github',token:'test'});
+  const state={sha:'old',raw:'old',head:'base',hasBranch:true,published:false,calls:[]};
+  api.verify=async()=>{};
+  api.read=async()=>({sha:state.sha,raw:state.raw});
+  api.github=async(route,method='GET',body)=>{
+    state.calls.push({route,method,body});
+    if(route.includes('/git/ref/heads/'))return state.hasBranch?{object:{sha:state.head}}:null;
+    if(route.includes('/contents/'))return {sha:state.sha};
+    if(route.endsWith('/git/commits/base'))return {tree:{sha:'tree-base'}};
+    if(route.endsWith('/git/blobs')){state.savedRaw=body.content;return {sha:'saved-blob'};}
+    if(route.endsWith('/git/trees'))return {sha:'tree-new'};
+    if(route.endsWith('/git/commits'))return {sha:'saved-commit'};
+    if(method==='PATCH'){
+      state.sha='saved-blob';state.raw=state.savedRaw;state.head=body.sha;
+      if(patchLost)throw new Error('Network error');
+      return {};
+    }
+    if(route.endsWith('/merges')){
+      if(mergeFails)throw new Error('Network error');
+      state.published=true;
+      if(mergeLost)throw new Error('Lost response');
+      return {};
+    }
+    if(route.includes('/compare/'))return {status:state.published?'behind':'ahead'};
+    if(method==='DELETE'){
+      if(cleanupFails)throw new Error('Cleanup error');
+      state.hasBranch=false;return {};
+    }
+    throw new Error('Unexpected request '+route);
+  };
+  return {api,state,allowMerge:()=>{mergeFails=false;}};
+}
+const entryPath='src/content/blog/italian/index.md';
+test('a failed merge returns the saved revision and retries without a second commit',async()=>{
+  const {api,state,allowMerge}=publishingAPI({mergeFails:true});
+  const saved=await api.save(entryPath,'new',{sha:'old'},[],true);
+  assert.equal(saved.publication,'pending');assert.equal(saved.sha,'saved-blob');assert.equal(saved.raw,'new');
+  allowMerge();
+  const result=await api.publish(entryPath,saved);
+  assert.equal(result.publication,'published');
+  assert.equal(state.calls.filter(call=>call.route.endsWith('/git/commits')&&call.method==='POST').length,1);
+  assert.equal(state.calls.filter(call=>call.route.endsWith('/merges')).at(-1).body.head,'saved-commit');
+});
+test('a lost branch-update response is recovered by checking the exact commit',async()=>{
+  const {api}=publishingAPI({patchLost:true});
+  const saved=await api.save(entryPath,'new',{sha:'old'},[],false);
+  assert.equal(saved.publication,'draft');assert.equal(saved.commit,'saved-commit');
+});
+test('a lost merge response is verified before reporting publication failure',async()=>{
+  const {api}=publishingAPI({mergeLost:true});
+  assert.equal((await api.save(entryPath,'new',{sha:'old'},[],true)).publication,'published');
+});
+test('branch cleanup failure does not turn publication into a failure',async()=>{
+  const {api}=publishingAPI({cleanupFails:true});
+  assert.equal((await api.save(entryPath,'new',{sha:'old'},[],true)).publication,'published');
+});
+test('retry never publishes another editors newer draft',async()=>{
+  const {api,state}=publishingAPI({mergeFails:true});
+  const saved=await api.save(entryPath,'new',{sha:'old'},[],true);
+  state.head='another-commit';const count=state.calls.filter(call=>call.route.endsWith('/merges')).length;
+  assert.equal((await api.publish(entryPath,saved)).publication,'pending');
+  assert.equal(state.calls.filter(call=>call.route.endsWith('/merges')).length,count);
+});

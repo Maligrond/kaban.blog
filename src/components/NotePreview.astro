@@ -1,22 +1,10 @@
 ---
 import type { CollectionEntry } from "astro:content";
+import { postSummary } from "../lib/post-text.js";
 import FormattedDate from "./FormattedDate.astro";
 interface Props { post: CollectionEntry<"blog">; }
 const { post } = Astro.props;
-const paragraphs = (post.body || "")
-  .replace(/```[\s\S]*?```/g, "")
-  .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
-  .replace(/^\s*#{1,6}\s+.*$/gm, "\n")
-  .replace(/^\s*([-*_])\1{2,}\s*$/gm, "\n")
-  .replace(/^\s*[-*+]\s+(.+)$/gm, "$1\n")
-  .split(/\n\s*\n/)
-  .map((text) => text.trim())
-  .filter((text) => text && !/^(<|\d+\.)/.test(text));
-const excerpt = (post.data.excerpt || paragraphs[0] || post.data.description)
-  .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
-  .replace(/[*_`]/g, "")
-  .replace(/\s+/g, " ").trim();
-const preview = excerpt.length > 360 ? excerpt.slice(0, 360).replace(/\s+\S*$/, "") + "…" : excerpt;
+const preview = postSummary(post.data.excerpt || post.body || "", 360) || post.data.description;
 ---
 <section class="note-preview">
   <h2><a href={`/blog/${post.id}/`}>{post.data.title}</a></h2>

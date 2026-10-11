@@ -1,11 +1,11 @@
 ---
 import { type CollectionEntry, getCollection, render } from "astro:content";
+import { postSummary } from "../../lib/post-text.js";
 import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
 import FormattedDate from "@components/FormattedDate.astro";
 import Giscus from "@components/Giscus.astro";
 import RelatedPosts from "@components/RelatedPosts.astro";
-import PhotoViewer from "@components/PhotoViewer.astro";
 
 export async function getStaticPaths() {
   const posts = (await getCollection("blog"))
@@ -30,7 +30,7 @@ const cities = post.data.cities
 const { Content } = await render(post);
 ---
 
-<Layout title={post.data.title} description={post.data.description} image={post.data.previewImage || post.data.cover?.src}>
+<Layout title={post.data.title} description={post.data.description} image={post.data.previewImage || post.data.cover?.src} searchDescription={postSummary(post.data.excerpt || post.body, 180) || post.data.description}>
   <Container>
     <div class="post-heading blog-post-heading" data-author-path={`src/content/blog/${post.id}/index.md`}>
       <a class="back-to-notes" href="/blog/">← Все записи</a>
@@ -58,5 +58,4 @@ const { Content } = await render(post);
       </div>
     </article>
   </Container>
-  <PhotoViewer />
 </Layout>

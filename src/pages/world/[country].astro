@@ -41,7 +41,7 @@ const { countryName, flag, cities } = Astro.props;
 const totalCities = cities.length;
 const favorites = cities.filter((c) => c.data.favorite || c.data.rating === 5);
 ---
-<Layout title={`${countryName} ${flag}`} description={`Города ${countryName}, которые я посетил`}>
+<Layout title={`${countryName} ${flag}`} description={`Места, в которых я побывал: ${countryName}.`}>
   <Container>
     <div class="journal-page-heading">
       <a href="/world/" class="back-to-notes">← Мир</a>

@@ -3,6 +3,7 @@ import Head from "@components/Head.astro";
 import Header from "@components/Header.astro";
 import Footer from "@components/Footer.astro";
 import PageFind from "@components/PageFind.astro";
+import PhotoViewer from "@components/PhotoViewer.astro";
 import AuthorMode from "@components/AuthorMode.astro";
 import { SITE } from "@consts";
 
@@ -11,9 +12,14 @@ type Props = {
   description: string;
   disableTransitions?: boolean;
   image?: string;
+  searchDescription?: string;
 };
 
-const { title, description, image, disableTransitions = false } = Astro.props;
+const { title, description, image, searchDescription = description, disableTransitions = false } = Astro.props;
+const pathname = Astro.url.pathname;
+const searchType = /^\/blog\/[^/]+\//.test(pathname) ? "Запись"
+  : pathname.startsWith("/countries/") ? "Город"
+  : /^\/world\/[^/]+\//.test(pathname) ? "Страна" : "Раздел";
 ---
 
 <!doctype html>
@@ -25,8 +31,11 @@ const { title, description, image, disableTransitions = false } = Astro.props;
     <a class="skip-to-content" href="#main-content">К содержимому</a>
     <Header />
     <main id="main-content" tabindex="-1" data-pagefind-ignore={Astro.url.pathname === "/author/" ? "all" : undefined}>
+      <span hidden data-pagefind-meta="description">{searchDescription}</span>
+      <span hidden data-pagefind-meta="Тип">{searchType}</span>
       <slot />
     </main>
+    <PhotoViewer />
     <Footer />
     <PageFind />
     <AuthorMode />

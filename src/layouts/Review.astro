@@ -3,7 +3,6 @@ import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
 import FormattedDate from "@components/FormattedDate.astro";
 import Rating from "@components/Rating.astro";
-import PhotoViewer from "@components/PhotoViewer.astro";
 interface Props {
   title: string;
   description: string;
@@ -17,7 +16,7 @@ interface Props {
   sourceLabel?: string;
   photos?: boolean;
 }
-const { title, description, subtitle, subtitleHref, date, rating, backHref, backLabel, url, sourceLabel = "Источник", photos = false } = Astro.props;
+const { title, description, subtitle, subtitleHref, date, rating, backHref, backLabel, url, sourceLabel = "Источник" } = Astro.props;
 ---
 <Layout title={title} description={description}>
   <Container>
@@ -34,5 +33,4 @@ const { title, description, subtitle, subtitleHref, date, rating, backHref, back
     <article class="post-content review-content"><slot /></article>
     <div class="review-return"><a class="archive-link" href={backHref}><span>{backLabel}</span><span aria-hidden="true">↗</span></a></div>
   </Container>
-  {photos && <PhotoViewer />}
 </Layout>
