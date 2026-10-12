@@ -1,17 +1,212 @@
 ---
-import type { CollectionEntry } from "astro:content";
+import { render, type CollectionEntry } from "astro:content";
 import { postSummary } from "../lib/post-text.js";
 import FormattedDate from "./FormattedDate.astro";
-interface Props { post: CollectionEntry<"blog">; }
-const { post } = Astro.props;
-const preview = postSummary(post.data.excerpt || post.body || "", 360) || post.data.description;
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+import { marked } from "marked";
+import { markdownPhotos } from "../scripts/author-photos.js";
+interface Props {
+  post: CollectionEntry<"blog">;
+  flow?: boolean;
+}
+const { post, flow = false } = Astro.props;
+const format = post.data.format || "article";
+const { Content } = await render(post);
+const inline = format === "note";
+const destination =
+  format === "link" && /^https?:\/\//.test(post.data.linkURL || "")
+    ? post.data.linkURL
+    : `/blog/${post.id}/`;
+const preview =
+  postSummary(post.data.excerpt || post.body || "", 360) ||
+  post.data.description;
+const blocks = marked.lexer(post.body || "");
+const short =
+  flow &&
+  (post.body || "").length < 600 &&
+  blocks.every((token) => ["paragraph", "space"].includes(token.type)) &&
+  !post.body?.includes("![");
+const paragraphs = short
+  ? blocks
+      .filter((token) => token.type === "paragraph")
+      .map((token) => postSummary(token.raw, 600))
+      .filter(Boolean)
+  : [];
+const images = import.meta.glob<{ default: ImageMetadata }>(
+  "/src/content/blog/**/*.{jpg,jpeg,png,webp,avif}",
+  { eager: true },
+);
+const firstPhotoMatch = markdownPhotos(post.body || "")[0];
+const firstPhoto = firstPhotoMatch?.src;
+const photoKey = firstPhoto
+  ? new URL(firstPhoto, `https://asset.invalid/src/content/blog/${post.id}/`)
+      .pathname
+  : "";
+const cover = post.data.coverDisabled
+  ? undefined
+  : post.data.cover ||
+    ((flow || format === "photo") && firstPhoto
+      ? images[photoKey]?.default
+      : undefined);
 ---
-<section class="note-preview">
-  <h2><a href={`/blog/${post.id}/`}>{post.data.title}</a></h2>
-  <p class="note-excerpt">{preview}</p>
+
+<section
+  id={`feed-${post.id}`}
+  class:list={["note-preview", { "flow-note": flow, "short-note": short }]}
+>
+  {!flow && !inline && format !== "photo" && cover && (
+    <a
+      class="note-cover"
+      href={`/blog/${post.id}/`}
+      aria-label={`Читать: ${post.data.title}`}
+      tabindex="-1"
+    >
+      <Image
+        src={cover}
+        alt={post.data.coverAlt || ""}
+        widths={[160, 320]}
+        sizes="(max-width: 480px) 96px, 150px"
+        loading="lazy"
+      />
+    </a>
+  )}
+  {!inline && (
+    <h2>
+      <a
+        href={destination}
+        target={format === "link" ? "_blank" : undefined}
+        rel={format === "link" ? "noopener noreferrer" : undefined}
+      >
+        {post.data.title}
+        {format === "link" && " ↗"}
+      </a>
+    </h2>
+  )}
+  {inline ? (
+    <div class="inline-note-text">
+      <Content />
+    </div>
+  ) : paragraphs.length ? (
+    paragraphs.map((text) => <p class="note-excerpt">{text}</p>)
+  ) : (
+    (format !== "photo" ||
+      post.data.excerpt ||
+      postSummary(post.body || "")) && <p class="note-excerpt">{preview}</p>
+  )}
+  {(flow || format === "photo") && !inline && cover && (
+    <a
+      class="flow-photo"
+      href={`/blog/${post.id}/`}
+      aria-label={`Читать: ${post.data.title}`}
+      tabindex="-1"
+    >
+      <Image
+        src={cover}
+        alt={post.data.coverAlt || firstPhotoMatch?.alt || ""}
+        widths={[480, 850]}
+        sizes="(max-width: 640px) calc(100vw - 40px), 850px"
+        loading="lazy"
+      />
+    </a>
+  )}
+  {format === "photo" && firstPhotoMatch?.caption && (
+    <p class="preview-photo-caption">{firstPhotoMatch.caption}</p>
+  )}
   <div class="note-meta">
     <FormattedDate date={post.data.date} />
-    {(post.data.tags || []).map(tag => <a href={`/tags/${encodeURIComponent(tag)}/`}>{tag}</a>)}
-    <a class="read-note" href={`/blog/${post.id}/`}>Читать дальше <span aria-hidden="true">↗</span></a>
+    {(post.data.tags || []).map((tag) => (
+      <a href={`/tags/${encodeURIComponent(tag)}/`}>{tag}</a>
+    ))}
+    <a class="read-note" href={`/blog/${post.id}/`}>
+      {format === "note"
+        ? "Обсудить"
+        : format === "link"
+          ? "Комментарий"
+          : short
+            ? "Открыть запись"
+            : "Читать дальше"}{" "}
+      <span aria-hidden="true">↗</span>
+    </a>
   </div>
 </section>
+<style>
+  .note-preview {
+    display: flow-root;
+  }
+  .note-cover {
+    float: right;
+    width: 150px;
+    margin: 4px 0 12px 20px;
+  }
+  .note-cover img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1.5;
+    object-fit: cover;
+  }
+  .flow-note {
+    padding: 0 0 28px;
+  }
+  .flow-note + .flow-note {
+    padding-top: 24px;
+    border-top: 1px solid var(--journal-rule);
+  }
+  .flow-note h2 {
+    font-size: clamp(27px, 3.5vw, 36px);
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+  }
+  .flow-note .note-excerpt {
+    font-size: 20px;
+    line-height: 1.55;
+    margin-top: 10px;
+  }
+  .flow-photo {
+    display: block;
+    margin-top: 16px;
+  }
+  .flow-photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 380px;
+    object-fit: cover;
+  }
+  .short-note h2 {
+    font-size: clamp(25px, 3vw, 30px);
+  }
+  @media (max-width: 480px) {
+    .note-cover {
+      width: 96px;
+      margin-left: 14px;
+    }
+  }
+</style>
+
+<style is:global>
+  .inline-note-text {
+    font:
+      20px/1.55 Georgia,
+      serif;
+    max-width: 850px;
+  }
+  .inline-note-text p + p {
+    margin-top: 12px;
+  }
+  .inline-note-text a {
+    color: var(--journal-accent);
+    text-decoration: underline;
+  }
+</style>
+
+<style>
+  .preview-photo-caption {
+    margin-top: 5px;
+    color: var(--journal-muted);
+    font:
+      13px/1.4 "PT Sans",
+      sans-serif;
+  }
+</style>

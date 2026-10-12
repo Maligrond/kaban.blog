@@ -16,6 +16,4 @@ export function postSummary(body, limit = 180) {
   const value = inlineText(paragraph?.tokens).replace(/\s+/g, ' ').trim();
   return value.length > limit ? value.slice(0, limit).replace(/\s+\S*$/, '') + '…' : value;
 }
-export function escapeHTML(value) {
-  return String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
-}
+export {escapeHTML} from './escape-html.js';

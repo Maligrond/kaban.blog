@@ -26,7 +26,7 @@ const tags = [...new Set(data.flatMap(post => post.data.tags || []))].sort((a, b
         <div>
           {years.map(year => <section aria-label={`Записи за ${year} год`} class="archive-year">
             <div class="section-caption"><h2><a href={`/archive/${year}/`}>{year}</a></h2><span>Записей: {posts[year].length}</span></div>
-            {posts[year].map(post => <NotePreview post={post} />)}
+            {posts[year].map(post => <NotePreview post={post} flow />)}
           </section>)}
           {data.length === 0 && <p class="journal-page-intro">Первая запись появится здесь скоро.</p>}
         </div>

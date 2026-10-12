@@ -5,27 +5,30 @@ import FormattedDate from "@components/FormattedDate.astro";
 import Rating from "@components/Rating.astro";
 interface Props {
   title: string;
+  authorPath?: string;
   description: string;
   subtitle: string | number;
   subtitleHref?: string;
   date: Date;
   rating: number;
+  status?: string;
   backHref: string;
   backLabel: string;
   url?: string;
   sourceLabel?: string;
   photos?: boolean;
 }
-const { title, description, subtitle, subtitleHref, date, rating, backHref, backLabel, url, sourceLabel = "Источник" } = Astro.props;
+const { title, description, subtitle, subtitleHref, date, rating, backHref, backLabel, url, sourceLabel = "Источник", authorPath, status } = Astro.props;
 ---
 <Layout title={title} description={description}>
   <Container>
-    <div class="post-heading review-heading">
+    <div class="post-heading review-heading" data-author-path={authorPath}>
       <a href={backHref} class="back-to-notes">← {backLabel}</a>
       <h1>{title}</h1>
       <p class="review-subtitle">{subtitleHref ? <a href={subtitleHref}>{subtitle}</a> : subtitle}</p>
       <div class="note-meta">
         <Rating value={rating} />
+        {status && <span class="shelf-status">{status}</span>}
         <FormattedDate date={date} />
         {url && <a href={url} target="_blank" rel="noopener noreferrer">{sourceLabel} ↗</a>}
       </div>

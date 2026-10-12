@@ -1,4 +1,4 @@
-import { escapeHTML } from './post-text.js';
+import { escapeHTML } from './escape-html.js';
 export function standaloneLink(node){
   if(node.tagName!=='p')return null;
   const children=node.children?.filter(child=>child.type!=='text'||child.value.trim());

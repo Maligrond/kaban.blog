@@ -1,7 +1,7 @@
 <script>
   // Readers never load the editor or receive author controls.
   async function restoreAuthorMode() {
-    if (!sessionStorage.getItem('kaban-author-session')) return;
+    try {if (!sessionStorage.getItem('kaban-author-session'))return;} catch {return;}
     const { activateAuthor } = await import('../scripts/author-editor.js');
     await activateAuthor();
   }

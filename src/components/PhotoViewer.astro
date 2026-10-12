@@ -1,42 +1,233 @@
 <dialog id="photo-viewer" aria-label="Просмотр фотографий" data-pagefind-ignore>
   <div class="photo-toolbar">
-    <button type="button" data-photo-prev aria-label="Предыдущая фотография">←</button>
+    <button type="button" data-photo-prev aria-label="Предыдущая фотография">
+      ←
+    </button>
     <span class="photo-position" aria-live="polite"></span>
-    <button type="button" data-photo-next aria-label="Следующая фотография">→</button>
-    <button type="button" data-photo-close autofocus>Закрыть · Esc</button>
+    <button type="button" data-photo-next aria-label="Следующая фотография">
+      →
+    </button>
+    <button type="button" data-photo-zoom aria-pressed="false">
+      Увеличить
+    </button>
+    <button type="button" data-photo-close aria-label="Закрыть просмотр фотографий" autofocus>
+      Закрыть · Esc
+    </button>
   </div>
   <figure>
-    <img class="photo-full" alt="" />
+    <div class="photo-stage">
+      <img class="photo-full" alt="" draggable="false" />
+    </div>
     <figcaption aria-live="polite"></figcaption>
   </figure>
 </dialog>
 
 <script>
-  import { initializeGalleries, layoutPreviewPhotos } from "../scripts/photo-layout.js";
+  import { photoTransform, photoSwipe } from "../scripts/photo-gestures.js";
+  import {
+    initializeGalleries,
+    layoutPreviewPhotos,
+  } from "../scripts/photo-layout.js";
   import { enhancePost } from "../scripts/post-enhancements.js";
   let photos: HTMLImageElement[] = [];
   let current = 0;
+  let transform = { scale: 1, x: 0, y: 0 };
+  const pointers = new Map<number, { x: number; y: number }>();
+  let gesture: {
+    x: number;
+    y: number;
+    time: number;
+    scale: number;
+    tx: number;
+    ty: number;
+    distance: number;
+    cx: number;
+    cy: number;
+  } | null = null;
+  let pinched = false;
+  let pointerType = "mouse";
+  let lastTap = { time: 0, x: 0, y: 0 };
+  function applyTransform(scale: number, x = 0, y = 0) {
+    const image = viewer()?.querySelector<HTMLImageElement>(".photo-full");
+    if (!image) return;
+    transform = photoTransform(
+      scale,
+      x,
+      y,
+      image.clientWidth,
+      image.clientHeight,
+    );
+    image.style.transform = `translate(${transform.x}px,${transform.y}px) scale(${transform.scale})`;
+    const zoom =
+      viewer()?.querySelector<HTMLButtonElement>("[data-photo-zoom]");
+    if (zoom) {
+      zoom.textContent =
+        transform.scale > 1.01 ? "Обычный размер" : "Увеличить";
+      zoom.setAttribute("aria-pressed", String(transform.scale > 1.01));
+    }
+  }
+  function resetPhoto() {
+    pointers.clear();
+    gesture = null;
+    pinched = false;
+    lastTap.time = 0;
+    applyTransform(1);
+  }
+  function startGesture() {
+    const points = [...pointers.values()];
+    if (!points.length) {
+      gesture = null;
+      return;
+    }
+    const a = points[0],
+      b = points[1];
+    gesture = {
+      x: a.x,
+      y: a.y,
+      time: performance.now(),
+      scale: transform.scale,
+      tx: transform.x,
+      ty: transform.y,
+      distance: b ? Math.hypot(b.x - a.x, b.y - a.y) : 0,
+      cx: b ? (a.x + b.x) / 2 : a.x,
+      cy: b ? (a.y + b.y) / 2 : a.y,
+    };
+  }
+  document.addEventListener("pointerdown", (event) => {
+    if (!(event.target instanceof Element) || !viewer()?.open) return;
+    const stage = event.target.closest<HTMLElement>(".photo-stage");
+    if (!stage || (event.pointerType === "mouse" && event.button !== 0)) return;
+    pointerType = event.pointerType;
+    stage.setPointerCapture(event.pointerId);
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pointers.size > 1) pinched = true;
+    startGesture();
+  });
+  document.addEventListener("pointermove", (event) => {
+    if (!gesture || !pointers.has(event.pointerId)) return;
+    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const points = [...pointers.values()],
+      a = points[0],
+      b = points[1];
+    if (b && gesture.distance > 0) {
+      const scale = Math.max(
+        1,
+        Math.min(
+          4,
+          (gesture.scale * Math.hypot(b.x - a.x, b.y - a.y)) / gesture.distance,
+        ),
+      );
+      const stage = viewer()
+        ?.querySelector(".photo-stage")
+        ?.getBoundingClientRect();
+      if (!stage) return;
+      const cx = stage.left + stage.width / 2,
+        cy = stage.top + stage.height / 2;
+      applyTransform(
+        scale,
+        (a.x + b.x) / 2 -
+          cx -
+          ((gesture.cx - cx - gesture.tx) * scale) / gesture.scale,
+        (a.y + b.y) / 2 -
+          cy -
+          ((gesture.cy - cy - gesture.ty) * scale) / gesture.scale,
+      );
+    } else if (gesture.scale > 1)
+      applyTransform(
+        gesture.scale,
+        gesture.tx + a.x - gesture.x,
+        gesture.ty + a.y - gesture.y,
+      );
+  });
+  function finishGesture(event: PointerEvent, cancelled = false) {
+    if (!pointers.has(event.pointerId)) return;
+    const start = gesture;
+    pointers.delete(event.pointerId);
+    if (!pointers.size && start && !cancelled) {
+      const dx = event.clientX - start.x,
+        dy = event.clientY - start.y;
+      const direction = photoSwipe(
+        dx,
+        dy,
+        performance.now() - start.time,
+        transform.scale,
+        pinched,
+      );
+      if (
+        direction &&
+        current + direction >= 0 &&
+        current + direction < photos.length
+      )
+        displayPhoto(current + direction);
+      else if (
+        event.pointerType === "touch" &&
+        !pinched &&
+        Math.hypot(dx, dy) < 12
+      ) {
+        const now = performance.now();
+        if (
+          lastTap.time > 0 &&
+          now - lastTap.time < 300 &&
+          Math.hypot(event.clientX - lastTap.x, event.clientY - lastTap.y) < 30
+        ) {
+          applyTransform(transform.scale > 1 ? 1 : 2);
+          lastTap.time = 0;
+        } else lastTap = { time: now, x: event.clientX, y: event.clientY };
+      }
+    }
+    if (pointers.size) startGesture();
+    else {
+      gesture = null;
+      pinched = false;
+    }
+  }
+  document.addEventListener("pointerup", (event) => finishGesture(event));
+  document.addEventListener("pointercancel", (event) =>
+    finishGesture(event, true),
+  );
+  document.addEventListener("dblclick", (event) => {
+    if (
+      pointerType === "mouse" &&
+      event.target instanceof Element &&
+      event.target.closest(".photo-stage") &&
+      viewer()?.open
+    )
+      applyTransform(transform.scale > 1 ? 1 : 2);
+  });
+  window.addEventListener("resize", () => {
+    if (viewer()?.open)
+      applyTransform(transform.scale, transform.x, transform.y);
+  });
   let trigger: HTMLElement | null = null;
-  const viewer = () => document.querySelector<HTMLDialogElement>("#photo-viewer");
+  const viewer = () =>
+    document.querySelector<HTMLDialogElement>("#photo-viewer");
 
   function initializePhotos() {
-    document.querySelectorAll(".post-photo-content").forEach(root => {enhancePost(root);layoutPreviewPhotos(root);});
+    document.querySelectorAll(".post-photo-content").forEach((root) => {
+      enhancePost(root);
+      layoutPreviewPhotos(root);
+    });
     initializeGalleries();
     photos = [];
     if (!viewer()) return;
-    document.querySelectorAll<HTMLImageElement>(".post-photo-content img").forEach((image) => {
-      // Preserve images that already link somewhere.
-      if (image.closest("a, .post-video")) return;
-      photos.push(image);
-      if (image.closest("button")) return;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "photo-trigger";
-      button.setAttribute("aria-label", `Увеличить фотографию: ${image.alt || "фотография из записи"}`);
-      button.setAttribute("aria-haspopup", "dialog");
-      image.before(button);
-      button.append(image);
-    });
+    document
+      .querySelectorAll<HTMLImageElement>(".post-photo-content img")
+      .forEach((image) => {
+        // Preserve images that already link somewhere.
+        if (image.closest("a, .post-video")) return;
+        photos.push(image);
+        if (image.closest("button")) return;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "photo-trigger";
+        button.setAttribute(
+          "aria-label",
+          `Увеличить фотографию: ${image.alt || "фотография из записи"}`,
+        );
+        button.setAttribute("aria-haspopup", "dialog");
+        image.before(button);
+        button.append(image);
+      });
   }
 
   function displayPhoto(index: number) {
@@ -45,12 +236,18 @@
     const full = dialog?.querySelector<HTMLImageElement>(".photo-full");
     if (!dialog || !photo || !full) return;
     current = index;
+    resetPhoto();
     full.src = photo.currentSrc || photo.src;
     full.alt = photo.alt;
-    dialog.querySelector("figcaption")!.textContent = photo.closest("figure")?.querySelector("figcaption")?.textContent || photo.alt;
-    dialog.querySelector(".photo-position")!.textContent = `${index + 1} / ${photos.length}`;
-    dialog.querySelector<HTMLButtonElement>("[data-photo-prev]")!.disabled = index === 0;
-    dialog.querySelector<HTMLButtonElement>("[data-photo-next]")!.disabled = index === photos.length - 1;
+    dialog.querySelector("figcaption")!.textContent =
+      photo.closest("figure")?.querySelector("figcaption")?.textContent ||
+      photo.alt;
+    dialog.querySelector(".photo-position")!.textContent =
+      `${index + 1} / ${photos.length}`;
+    dialog.querySelector<HTMLButtonElement>("[data-photo-prev]")!.disabled =
+      index === 0;
+    dialog.querySelector<HTMLButtonElement>("[data-photo-next]")!.disabled =
+      index === photos.length - 1;
   }
 
   document.addEventListener("click", (event) => {
@@ -63,17 +260,27 @@
       trigger = button;
       displayPhoto(index);
       viewer()?.showModal();
+      resetPhoto();
       return;
     }
     const dialog = viewer();
     if (!dialog?.open) return;
-    if (event.target.closest("[data-photo-close]") || event.target === dialog) dialog.close();
-    if (event.target.closest("[data-photo-prev]") && current > 0) displayPhoto(current - 1);
-    if (event.target.closest("[data-photo-next]") && current < photos.length - 1) displayPhoto(current + 1);
+    if (event.target.closest("[data-photo-zoom]"))
+      applyTransform(transform.scale > 1 ? 1 : 2);
+    if (event.target.closest("[data-photo-close]") || event.target === dialog)
+      dialog.close();
+    if (event.target.closest("[data-photo-prev]") && current > 0)
+      displayPhoto(current - 1);
+    if (
+      event.target.closest("[data-photo-next]") &&
+      current < photos.length - 1
+    )
+      displayPhoto(current + 1);
   });
 
   document.addEventListener("keydown", (event) => {
-    if (!viewer()?.open || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (!viewer()?.open || event.altKey || event.ctrlKey || event.metaKey)
+      return;
     if (event.key === "ArrowLeft" && current > 0) {
       event.preventDefault();
       displayPhoto(current - 1);
@@ -84,11 +291,16 @@
     }
   });
 
-  document.addEventListener("close", (event) => {
-    if (event.target !== viewer()) return;
-    if (trigger?.isConnected) trigger.focus({ preventScroll: true });
-    trigger = null;
-  }, true);
+  document.addEventListener(
+    "close",
+    (event) => {
+      if (event.target !== viewer()) return;
+      resetPhoto();
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      trigger = null;
+    },
+    true,
+  );
   document.addEventListener("astro:before-swap", () => viewer()?.close());
   document.addEventListener("astro:page-load", initializePhotos);
   document.addEventListener("kaban:photos-changed", initializePhotos);
@@ -105,9 +317,16 @@
     background: transparent;
     cursor: zoom-in;
   }
-  .post-content .photo-trigger img { margin: 0; }
-  .photo-trigger:focus-visible { outline: 2px solid var(--journal-accent); outline-offset: 5px; }
-  html:has(#photo-viewer[open]) { overflow: hidden; }
+  .post-content .photo-trigger img {
+    margin: 0;
+  }
+  .photo-trigger:focus-visible {
+    outline: 2px solid var(--journal-accent);
+    outline-offset: 5px;
+  }
+  html:has(#photo-viewer[open]) {
+    overflow: hidden;
+  }
   #photo-viewer {
     width: calc(100% - 32px);
     max-width: 1400px;
@@ -118,12 +337,86 @@
     background: var(--journal-paper);
     color: var(--journal-ink);
   }
-  #photo-viewer::backdrop { background: rgb(0 0 0 / .85); }
-  .photo-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font: 16px/1.4 "PT Sans", sans-serif; }
-  .photo-toolbar button { min-width: 44px; min-height: 44px; padding: 8px; cursor: pointer; }
-  .photo-toolbar button:disabled { opacity: .3; cursor: default; }
-  .photo-toolbar button:focus-visible { outline: 2px solid var(--journal-accent); outline-offset: 2px; }
-  .photo-toolbar [data-photo-close] { margin-left: auto; }
-  #photo-viewer .photo-full { display: block; width: 100%; height: auto; max-height: calc(100dvh - 160px); object-fit: contain; }
-  #photo-viewer figcaption { margin-top: 12px; text-align: center; font: 16px/1.5 "PT Sans", sans-serif; }
+  #photo-viewer::backdrop {
+    background: rgb(0 0 0 / 0.85);
+  }
+  .photo-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    font:
+      16px/1.4 "PT Sans",
+      sans-serif;
+  }
+  .photo-toolbar button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px;
+    cursor: pointer;
+  }
+  .photo-toolbar button:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+  .photo-toolbar button:focus-visible {
+    outline: 2px solid var(--journal-accent);
+    outline-offset: 2px;
+  }
+  .photo-toolbar [data-photo-close] {
+    margin-left: auto;
+  }
+  .photo-stage {
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+  }
+  #photo-viewer .photo-full {
+    transform-origin: center;
+    will-change: transform;
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: calc(100dvh - 160px);
+    object-fit: contain;
+  }
+  #photo-viewer figcaption {
+    margin-top: 12px;
+    text-align: center;
+    font:
+      16px/1.5 "PT Sans",
+      sans-serif;
+  }
+</style>
+
+<style is:global>
+  @media (max-width: 640px) {
+    #photo-viewer {
+      width: 100%;
+      max-height: 100dvh;
+      padding: 10px;
+    }
+    .photo-toolbar {
+      gap: 4px;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+    .photo-toolbar button {
+      padding: 6px;
+    }
+    .photo-toolbar [data-photo-close] {
+      font-size: 0;
+    }
+    .photo-toolbar [data-photo-close]::after {
+      content: "Закрыть";
+      font-size: 13px;
+    }
+    #photo-viewer .photo-full {
+      max-height: calc(100dvh - 140px);
+    }
+    #photo-viewer figcaption {
+      font-size: 14px;
+      margin-top: 8px;
+    }
+  }
 </style>

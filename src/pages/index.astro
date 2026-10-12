@@ -3,61 +3,146 @@ import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
 import { SITE, HOME, SOCIALS } from "@consts";
 import { getCollection } from "astro:content";
-import { Image } from "astro:assets";
 import NotePreview from "@components/NotePreview.astro";
-import FormattedDate from "@components/FormattedDate.astro";
-
-const posts = (await getCollection("blog", ({ data }) => !data.draft))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
-const featured = posts.find(post => post.data.featured);
-const recent = posts.filter(post => post.id !== featured?.id).slice(0, SITE.NUM_POSTS_ON_HOMEPAGE);
+const posts = (await getCollection("blog", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
+const recent = posts.slice(0, SITE.NUM_POSTS_ON_HOMEPAGE);
 ---
+
 <Layout title={HOME.TITLE} description={HOME.DESCRIPTION}>
   <Container>
-    <div class="home-journal" data-pagefind-ignore>
-      <section class="journal-intro">
-        <p class="eyebrow">Личный блог</p>
-        <h1>Кабан<span class="accent-dot">.</span></h1>
-        <p class="intro-copy">Жизнь, поездки и всё, что хочется записать.</p>
-        <div class="intro-links">
-          <a href="/about/">Немного обо мне ↗</a>
-          <a href="/rss.xml">Подписаться по RSS ↗</a>
+    <div class="letter-home" data-pagefind-ignore>
+      <section class="letter-hello" aria-labelledby="hello">
+        <img src="/android-chrome-192x192.png" alt="" width="56" height="56" />
+        <div>
+          <h1 id="hello">
+            Всем ку. Я Кабан<span class="accent-dot">.</span>
+          </h1>
+          <p>Пишу о жизни и поездках. Здесь же — мои книги, игры и места.</p>
+          <div class="letter-links">
+            <a href="/about/">Немного обо мне</a>
+            <a href="/rss.xml">Читать по RSS ↗</a>
+          </div>
         </div>
       </section>
-      {featured && <section class="featured-note">
-        <div class="section-caption"><span>Избранная запись</span></div>
-        <div class:list={["featured-note-body", { "feature-without-photo": !featured.data.cover }]}>
-        {featured.data.cover && <a href={`/blog/${featured.id}/`} class="feature-photo" aria-label={featured.data.title}>
-          <Image src={featured.data.cover} alt={featured.data.coverAlt || featured.data.title} widths={[480, 800, 1200]} sizes="(max-width: 640px) calc(100vw - 40px), (max-width: 1156px) 55vw, 620px" loading="eager" />
-          {featured.data.coverAlt && <span class="photo-caption">{featured.data.coverAlt}</span>}
-        </a>}
-        <div class="feature-copy">
-          <h2><a href={`/blog/${featured.id}/`}>{featured.data.title}</a></h2>
-          <p>{featured.data.excerpt || featured.data.description}</p>
-          <div class="note-meta"><FormattedDate date={featured.data.date} /><a href={`/blog/${featured.id}/`}>Читать историю ↗</a></div>
-        </div>
-        </div>
-      </section>}
-      <div class="journal-columns">
-        <section class="journal-feed" aria-label="Последние записи">
-          <div class="section-caption"><span>Последние записи</span></div>
-          {recent.map(post => <NotePreview post={post} />)}
-          <a class="archive-link" href="/blog/">Все записи <span aria-hidden="true">→</span></a>
-        </section>
-        <aside class="journal-aside">
-          <p class="eyebrow">На полях</p>
-          <a href="/world/">Мир <span>Города и впечатления</span></a>
-          <a href="/about/books/">Книги <span>Что я читаю</span></a>
-          <a href="/about/games/">Игры <span>Во что играю</span></a>
-          <a href="/about/movies/">Фильмы <span>Что смотрю</span></a>
-          <a href="/bookmarks/">Закладки <span>Находки в интернете</span></a>
-          <div class="aside-contacts">
-            <p class="eyebrow">На связи</p>
-            {SOCIALS.map(social => <a href={social.HREF} target="_blank" rel="noopener noreferrer">{social.NAME} ↗</a>)}
-            {SITE.EMAIL && <a href={`mailto:${SITE.EMAIL}`}>Написать письмо ↗</a>}
-          </div>
-        </aside>
+      <section class="letter-feed" aria-labelledby="feed-title">
+        <h2 id="feed-title" class="letter-label">
+          Последние записи
+        </h2>
+        {recent.map((post) => (
+          <NotePreview post={post} />
+        ))}
+        <a class="archive-link" href="/blog/">
+          Все записи <span aria-hidden="true">→</span>
+        </a>
+      </section>
+      <nav class="letter-collections" aria-label="Мои подборки">
+        <a href="/world/">Мир</a>
+        <a href="/about/books/">Книги</a>
+        <a href="/about/games/">Игры</a>
+        <a href="/about/movies/">Фильмы</a>
+        <a href="/bookmarks/">Закладки</a>
+        <a href="/now/">Сейчас</a>
+      </nav>
+      <div class="letter-contact">
+        {SOCIALS.map((social) => (
+          <a href={social.HREF} target="_blank" rel="noopener noreferrer">
+            {social.NAME} ↗
+          </a>
+        ))}
+        {SITE.EMAIL && <a href={`mailto:${SITE.EMAIL}`}>Написать письмо ↗</a>}
       </div>
     </div>
   </Container>
 </Layout>
+<style>
+  .letter-home {
+    max-width: 850px;
+  }
+  .letter-hello {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    margin: 4px 0 32px;
+  }
+  .letter-hello img {
+    flex: none;
+    width: 56px;
+    height: 56px;
+  }
+  .letter-hello h1 {
+    font:
+      700 25px/1.15 "PT Sans",
+      sans-serif;
+    letter-spacing: -0.025em;
+  }
+  .letter-hello p {
+    margin-top: 6px;
+    font:
+      17px/1.45 Georgia,
+      serif;
+  }
+  .letter-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin-top: 8px;
+    font:
+      14px/1.5 "PT Sans",
+      sans-serif;
+    color: var(--journal-accent);
+  }
+  .letter-feed {
+    margin-top: 32px;
+    border-top: 1px solid var(--journal-rule);
+    padding-top: 20px;
+  }
+  .letter-label {
+    margin-bottom: 18px;
+    color: var(--journal-muted);
+    font:
+      14px/1.4 "PT Sans",
+      sans-serif;
+  }
+  .letter-collections {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 22px;
+    padding-top: 20px;
+    margin-top: 25px;
+    border-top: 1px solid var(--journal-rule);
+    font:
+      20px/1.4 "PT Sans",
+      sans-serif;
+  }
+  .letter-contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin-top: 12px;
+    font:
+      14px/1.5 "PT Sans",
+      sans-serif;
+    color: var(--journal-muted);
+  }
+  .letter-home a:hover {
+    color: var(--journal-accent);
+  }
+  @media (max-width: 640px) {
+    .letter-hello {
+      gap: 12px;
+      margin-bottom: 25px;
+    }
+    .letter-hello img {
+      width: 44px;
+      height: 44px;
+    }
+    .letter-hello h1 {
+      font-size: 23px;
+    }
+    .letter-hello p {
+      font-size: 16px;
+    }
+  }
+</style>

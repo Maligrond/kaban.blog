@@ -2,21 +2,29 @@
 import Review from "@layouts/Review.astro";
 import { Image } from "astro:assets";
 import { getCollection, render, type CollectionEntry } from "astro:content";
+import {hasCoverInBody} from '../../scripts/author-cover.js';
+import {readFile} from 'node:fs/promises';
+import {parseDocument} from 'yaml';
 export async function getStaticPaths() {
   return (await getCollection("countries")).filter(entry => !entry.data.draft).map(entry => ({ params: { slug: entry.id }, props: { entry } }));
 }
 interface Props { entry: CollectionEntry<"countries">; }
 const { entry } = Astro.props;
 const { Content } = await render(entry);
+// The source frontmatter path is needed to compare with Markdown (the image
+// schema has already replaced it with an optimized asset descriptor).
+const source=await readFile(`src/content/countries/${entry.id}.md`,'utf8');
+const photoSource=parseDocument(source.match(/^---\r?\n([\s\S]*?)\r?\n---/)?.[1] || '{}').get('photo');
+const photoAlreadyShown=typeof photoSource==='string' && hasCoverInBody(entry.body || '',photoSource);
 const countryHref = `/world/${entry.data.country.toLowerCase().replace(/\s+/g, "-")}/`;
 const stories = (await getCollection("blog"))
   .filter(post => !post.data.draft && post.data.cities.some(city => city.id === entry.id))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 ---
-<Review title={entry.data.title} description={`Мои впечатления о городе ${entry.data.title}, ${entry.data.country}`}
+<Review authorPath={`src/content/countries/${entry.id}.md`} title={entry.data.title} description={`Мои впечатления о городе ${entry.data.title}, ${entry.data.country}`}
   subtitle={`${entry.data.flag} ${entry.data.country}`} subtitleHref={countryHref}
   photos={!!entry.data.photo} date={entry.data.date} rating={entry.data.rating} backHref={countryHref} backLabel={`Все города · ${entry.data.country}`}>
-  {entry.data.photo && <figure class="city-photo post-photo-content">
+  {entry.data.photo && !photoAlreadyShown && <figure class="city-photo post-photo-content">
     <Image src={entry.data.photo} alt={entry.data.photoAlt || `${entry.data.title}, ${entry.data.country}`}
       widths={[480, 850, 1200]} sizes="(max-width: 640px) calc(100vw - 40px), (max-width: 946px) calc(100vw - 96px), 850px" loading="eager" />
   </figure>}

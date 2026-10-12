@@ -2,122 +2,175 @@
 import "@pagefind/default-ui/css/ui.css";
 ---
 
-<dialog id="search-dialog" transition:persist aria-label="Поиск по сайту"
-  class="search-dialog"
-  data-pagefind-ignore>
+<section
+  id="search-panel"
+  transition:persist
+  aria-label="Поиск по сайту"
+  class="search-panel"
+  data-pagefind-ignore
+  hidden
+>
   <div class="search-toolbar">
-    <h2 id="search-heading">Поиск</h2>
-    <button type="button" id="close-search" class="search-close" aria-label="Закрыть поиск">
-      <span class="search-escape" aria-hidden="true">Esc</span>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+    <p>Поиск по блогу</p>
+    <button
+      type="button"
+      id="close-search"
+      class="search-close"
+      aria-label="Закрыть поиск"
+    >
+      Закрыть <span aria-hidden="true">×</span>
     </button>
   </div>
   <div id="search" class="pagefind-ui"></div>
-  <p class="search-hint">Найди запись, город или что-нибудь интересное.</p>
-</dialog>
-
+  <p class="search-hint">Записи, города, книги и игры.</p>
+</section>
 <script>
-  import { escapeHTML } from "../lib/post-text.js";
-  import { PagefindUI } from "@pagefind/default-ui";
-  function initializeSearch() {
+  import {escapeHTML} from "../lib/escape-html.js";
+  let previousFocus: HTMLElement | null = null;
+  const panel = () => document.querySelector<HTMLElement>("#search-panel");
+  let loading:Promise<void>|undefined;
+  async function initializeSearch() {
     const search = document.querySelector("#search");
     if (!search || search.querySelector("input")) return;
-    new PagefindUI({ element: "#search", showImages: false, showSubResults: false, excerptLength: 20,
+    if(loading)return loading;
+    loading=import("@pagefind/default-ui").then(({PagefindUI})=>{new PagefindUI({
+      element: "#search",
+      showImages: false,
+      showSubResults: false,
+      excerptLength: 20,
       processResult: (result) => {
         const { description, ...meta } = result.meta;
-        return { ...result, meta, excerpt: description ? escapeHTML(description) : result.excerpt };
-      }, resetStyles: false, translations: {
-      search_label: "Поиск по сайту", placeholder: "Что найти?", clear_search: "Очистить", searching: "Ищем…",
-      zero_results: "По запросу «[SEARCH_TERM]» ничего не найдено",
-      one_result: "Найдено: [COUNT] по запросу «[SEARCH_TERM]»",
-      many_results: "Найдено: [COUNT] по запросу «[SEARCH_TERM]»", load_more: "Показать ещё",
-    } });
+        return {
+          ...result,
+          meta,
+          excerpt: description ? escapeHTML(description) : result.excerpt,
+        };
+      },
+      resetStyles: false,
+      translations: {
+        search_label: "Поиск по сайту",
+        placeholder: "Что найти?",
+        clear_search: "Очистить",
+        searching: "Ищем…",
+        zero_results: "По запросу «[SEARCH_TERM]» ничего не найдено",
+        one_result: "Найдено: [COUNT]",
+        many_results: "Найдено: [COUNT]",
+        load_more: "Показать ещё",
+      },
+    });
+    search.querySelector<HTMLInputElement>("input")?.setAttribute("aria-label","Поиск по сайту");
+    }).finally(()=>{loading=undefined;});
+    return loading;
   }
-  initializeSearch();
-  document.addEventListener("astro:page-load", initializeSearch);
-  let previousFocus: HTMLElement | null = null;
-  const getDialog = () => document.querySelector<HTMLDialogElement>("#search-dialog");
-
-  function openSearch() {
-    const dialog = getDialog();
-    if (!dialog || dialog.open) return;
-    previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    dialog.showModal();
-    dialog.querySelector<HTMLInputElement>("input")?.focus();
+  function closeSearch(restore = true) {
+    const root = panel();
+    if (!root || root.hidden) return;
+    root.hidden = true;
+    document
+      .querySelector("#magnifying-glass")
+      ?.setAttribute("aria-expanded", "false");
+    if (restore && previousFocus?.isConnected) previousFocus.focus();
+    previousFocus = null;
   }
+  async function openSearch(invoker?:HTMLElement) {
+    const root = panel();
+    if (!root) return;
+    if (!root.hidden) {
+      root.querySelector<HTMLInputElement>("input")?.focus();
+      return;
+    }
+    previousFocus=invoker || (document.activeElement instanceof HTMLElement && document.activeElement!==document.body ? document.activeElement : document.getElementById('magnifying-glass'));
+    root.hidden = false;
+    document
+      .querySelector("#magnifying-glass")
+      ?.setAttribute("aria-expanded", "true");
+    root.scrollIntoView({block:'nearest',behavior:'instant'});
+    const hint=root.querySelector<HTMLElement>('.search-hint');
+    if(hint)hint.textContent='Загружаю поиск…';
+    try {
+      await initializeSearch();if(root.hidden)return;
+      if(hint)hint.textContent='Записи, города, книги и игры.';
+      root.querySelector<HTMLInputElement>('input')?.focus({preventScroll:true});
+    } catch {if(hint)hint.textContent='Поиск не загрузился. Закрой и попробуй снова.';}
 
-  function closeSearch() {
-    getDialog()?.close();
   }
-
   document.addEventListener("click", (event) => {
     if (!(event.target instanceof Element)) return;
-    if (event.target.closest("#magnifying-glass")) openSearch();
-    if (event.target.closest("#close-search, .pagefind-ui__result-link")) closeSearch();
-    const dialog = getDialog();
-    if (event.target === dialog && dialog) {
-      const box = dialog.getBoundingClientRect();
-      if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) closeSearch();
+    if (event.target.closest("#magnifying-glass")) {
+      if (panel()?.hidden) openSearch(event.target.closest<HTMLElement>("#magnifying-glass") || undefined);
+      else closeSearch();
     }
+    if (event.target.closest("[data-open-search]")) openSearch(event.target.closest<HTMLElement>("[data-open-search]") || undefined);
+    if (event.target.closest("#close-search")) closeSearch();
+    if (event.target.closest(".pagefind-ui__result-link")) closeSearch(false);
   });
-
   document.addEventListener("keydown", (event) => {
-    const target = event.target;
-    const editing = target instanceof HTMLElement && (target.isContentEditable || !!target.closest("input, textarea, select, [contenteditable='true']"));
-    if ((event.key === "/" && !editing && !event.ctrlKey && !event.metaKey && !event.altKey) || ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")) {
+    const editing =
+      event.target instanceof HTMLElement &&
+      !!event.target.closest("input,textarea,select,[contenteditable=true]");
+    if (event.key === "Escape" && !panel()?.hidden) {
+      event.preventDefault();
+      closeSearch();
+    }
+    if (
+      (event.key === "/" &&
+        !editing &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !event.altKey) ||
+      ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")
+    ) {
       event.preventDefault();
       openSearch();
     }
   });
-
-  // Capture also handles the dialog preserved across Astro page transitions.
-  document.addEventListener("close", (event) => {
-    if (event.target !== getDialog()) return;
-    const input = getDialog()?.querySelector<HTMLInputElement>("input");
-    if (input) {
-      input.value = "";
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-    if (previousFocus?.isConnected) previousFocus.focus();
-    previousFocus = null;
-  }, true);
-  document.addEventListener("astro:before-swap", closeSearch);
+  document.addEventListener("astro:before-swap", () => closeSearch(false));
+  document.addEventListener("astro:page-load", () =>
+    document
+      .querySelector("#magnifying-glass")
+      ?.setAttribute("aria-expanded", String(!panel()?.hidden)),
+  );
 </script>
-
 <style>
-  .search-dialog {
-    width: min(calc(100% - 32px), 640px);
-    max-height: 78dvh;
-    margin: min(12dvh, 96px) auto auto;
-    padding: 20px 24px 24px;
-    border: 1px solid var(--journal-rule);
-    border-radius: 8px;
-    background: var(--journal-paper);
+  .search-panel {
+    padding: 14px 0 20px;
+    border-bottom: 1px solid var(--journal-rule);
     color: var(--journal-ink);
-    box-shadow: 0 20px 80px rgb(0 0 0 / .18);
-    overflow-y: auto;
-    overscroll-behavior: contain;
   }
-  .search-dialog::backdrop { background: rgb(0 0 0 / .32); backdrop-filter: blur(3px); }
-  .search-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
-  .search-toolbar h2 { margin: 0; font: 700 24px/1.2 "PT Sans", sans-serif; letter-spacing: -.02em; }
-  .search-close { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 44px; min-height: 44px; color: var(--journal-muted); }
-  .search-escape { font: 12px/1 "PT Sans", sans-serif; border: 1px solid var(--journal-rule); border-radius: 3px; padding: 4px 5px; }
-  .search-close:hover { color: var(--journal-accent); }
-  .search-hint { margin: 16px 0 0; color: var(--journal-muted); font: 15px/1.5 "PT Sans", sans-serif; }
-  .search-dialog:has(input:not(:placeholder-shown)) .search-hint { display: none; }
-  @media (max-width: 640px) {
-    .search-dialog { padding: 12px 16px 20px; margin-top: 24px; max-height: calc(100dvh - 48px); }
-    .search-toolbar h2 { font-size: 22px; }
-    .search-escape { display: none; }
+  .search-panel[hidden] {
+    display: none;
+  }
+  .search-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font:
+      14px/1.4 "PT Sans",
+      sans-serif;
+    color: var(--journal-muted);
+    margin-bottom: 8px;
+  }
+  .search-close {
+    padding: 5px 0 5px 12px;
+    min-height: 36px;
+    cursor: pointer;
+  }
+  .search-hint {
+    margin-top: 10px;
+    color: var(--journal-muted);
+    font-size: 14px;
+  }
+  .search-panel:has(input:not(:placeholder-shown)) .search-hint {
+    display: none;
   }
 </style>
-
 <style is:global>
   #search {
+    max-width: 850px;
+    --pagefind-ui-border-radius: 0;
     --pagefind-ui-scale: 1;
     --pagefind-ui-border-width: 1px;
-    --pagefind-ui-border-radius: 5px;
+    --pagefind-ui-border-radius: 0;
     --pagefind-ui-font: "PT Sans", sans-serif;
     --pagefind-ui-primary: var(--journal-accent);
     --pagefind-ui-text: var(--journal-ink);
@@ -125,30 +178,112 @@ import "@pagefind/default-ui/css/ui.css";
     --pagefind-ui-border: var(--journal-rule);
     --pagefind-ui-tag: var(--journal-paper);
   }
-  html:has(#search-dialog[open]) { overflow: hidden; }
-  #search input, #search p { font-weight: normal; }
+
+  #search input,
+  #search p {
+    font-weight: normal;
+  }
   #search .pagefind-ui__search-input {
-    height: 54px; padding: 0 82px 0 44px; font-size: 18px;
+    height: 48px;
+    padding: 0 82px 0 44px;
+    font-size: 18px;
     background: color-mix(in srgb, var(--journal-ink) 3%, var(--journal-paper));
   }
-  #search .pagefind-ui__search-input::placeholder { color: var(--journal-muted); opacity: 1; }
-  #search input:focus-visible { outline: 2px solid color-mix(in srgb, var(--journal-accent) 65%, transparent); outline-offset: 2px; }
-  #search .pagefind-ui__form::before { width: 17px; height: 17px; top: 18px; left: 16px; }
-  #search .pagefind-ui__search-clear { top: 5px; right: 5px; height: 44px; padding: 0 8px; font-size: 13px; color: var(--journal-muted); background: transparent; }
-  #search .pagefind-ui__search-clear:hover { color: var(--journal-accent); }
-  #search .pagefind-ui__results-area { margin-top: 8px; }
-  #search .pagefind-ui__message { height: auto; min-height: 20px; padding: 12px 0; margin: 0; color: var(--journal-muted); font-size: 14px; line-height: 1.4; }
-  #search .pagefind-ui__result { padding-block: 16px; }
-  #search .pagefind-ui__result-inner { margin-top: 0; min-width: 0; }
-  #search .pagefind-ui__result-title { font-size: 20px; font-weight: 700; line-height: 1.3; }
-  #search .pagefind-ui__result-link { text-decoration: none; }
-  #search .pagefind-ui__result-link:hover { color: var(--journal-accent); text-decoration: underline; text-underline-offset: 3px; }
-  #search .pagefind-ui__result-excerpt { min-width: 0; margin-top: 6px; font: 16px/1.5 Georgia, serif; overflow-wrap: anywhere; }
-  #search .pagefind-ui__button { margin-top: 16px; font-size: 15px; font-weight: normal; }
-  #search mark { background: color-mix(in srgb, var(--journal-accent), transparent 87%); color: inherit; }
+  #search .pagefind-ui__search-input::placeholder {
+    color: var(--journal-muted);
+    opacity: 1;
+  }
+  #search input:focus-visible {
+    outline: 2px solid
+      color-mix(in srgb, var(--journal-accent) 65%, transparent);
+    outline-offset: 2px;
+  }
+  #search .pagefind-ui__form::before {
+    width: 17px;
+    height: 17px;
+    top: 15px;
+    left: 16px;
+  }
+  #search .pagefind-ui__search-clear {
+    top: 2px;
+    right: 5px;
+    height: 44px;
+    padding: 0 8px;
+    font-size: 13px;
+    color: var(--journal-muted);
+    background: transparent;
+  }
+  #search .pagefind-ui__search-clear:hover {
+    color: var(--journal-accent);
+  }
+  #search .pagefind-ui__results-area {
+    margin-top: 8px;
+  }
+  #search .pagefind-ui__message {
+    height: auto;
+    min-height: 20px;
+    padding: 12px 0;
+    margin: 0;
+    color: var(--journal-muted);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  #search .pagefind-ui__result {
+    padding-block: 16px;
+  }
+  #search .pagefind-ui__result-inner {
+    margin-top: 0;
+    min-width: 0;
+  }
+  #search .pagefind-ui__result-title {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  #search .pagefind-ui__result-link {
+    text-decoration: none;
+  }
+  #search .pagefind-ui__result-link:hover {
+    color: var(--journal-accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  #search .pagefind-ui__result-excerpt {
+    min-width: 0;
+    margin-top: 6px;
+    font:
+      16px/1.5 Georgia,
+      serif;
+    overflow-wrap: anywhere;
+  }
+  #search .pagefind-ui__button {
+    margin-top: 16px;
+    font-size: 15px;
+    font-weight: normal;
+  }
+  #search mark {
+    background: color-mix(in srgb, var(--journal-accent), transparent 87%);
+    color: inherit;
+  }
 </style>
 
 <style is:global>
-  #search .pagefind-ui__result-tags { margin-top: 7px; gap: 8px; }
-  #search .pagefind-ui__result-tag { padding: 0; color: var(--journal-muted); font-size: 13px; background: transparent; }
+  #search .pagefind-ui__result-tags {
+    margin-top: 7px;
+    gap: 8px;
+  }
+  #search .pagefind-ui__result-tag {
+    padding: 0;
+    color: var(--journal-muted);
+    font-size: 13px;
+    background: transparent;
+  }
+</style>
+
+<style is:global>
+  #search .pagefind-ui__results-area {
+    max-height: 50dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
 </style>

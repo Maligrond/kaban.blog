@@ -67,6 +67,7 @@ const { title, description, image = "/android-chrome-512x512.png", disableTransi
   })();
 </script>
 <script>
+  import '../scripts/reading-navigation.js';
   const media = window.matchMedia("(prefers-color-scheme: dark)");
   function savedTheme() {
     try { return localStorage.getItem("theme") || "system"; } catch { return "system"; }

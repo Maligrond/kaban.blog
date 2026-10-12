@@ -1,4 +1,5 @@
 ---
+import PageFind from "./PageFind.astro";
 import Container from "@components/Container.astro";
 const path = Astro.url.pathname;
 const section = path.startsWith("/world/") || path.startsWith("/countries/") || path.startsWith("/about/countries") ? "/world/"
@@ -13,10 +14,11 @@ const links = [{ href: "/blog/", label: "Блог" }, { href: "/world/", label: 
       <nav aria-label="Основная навигация">
         {links.map(link => <a href={link.href} aria-current={section === link.href ? (path === link.href ? "page" : "location") : undefined}>{link.label}</a>)}
       </nav>
-      <button id="magnifying-glass" class="search-trigger" aria-label="Поиск по сайту">
+      <button id="magnifying-glass" class="search-trigger" aria-label="Поиск по сайту" aria-expanded="false" aria-controls="search-panel">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
         <span>Поиск</span>
       </button>
     </div>
+    <PageFind />
   </Container>
 </header>

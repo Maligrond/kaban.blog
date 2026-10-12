@@ -1,17 +1,47 @@
-<div class="giscus"></div>
-
-<script is:inline src="https://giscus.app/client.js"
-        data-repo="Maligrond/kaban.blog"
-        data-repo-id="R_kgDONiRElw"
-        data-category="General"
-        data-category-id="DIC_kwDONiREl84ClhBj"
-        data-mapping="pathname"
-        data-strict="0"
-        data-reactions-enabled="1"
-        data-emit-metadata="0"
-        data-input-position="bottom"
-        data-theme="preferred_color_scheme"
-        data-lang="ru"
-        crossorigin="anonymous"
-        async>
+<div class="giscus" data-giscus-root></div>
+<script>
+  let visibility:IntersectionObserver|undefined;
+  function loadComments(root:Element) {
+    if(root.querySelector('script') || !root.isConnected)return;
+    const script=document.createElement('script');
+    script.src='https://giscus.app/client.js';script.async=true;script.crossOrigin='anonymous';
+    // The widget reports its height once its message handler is ready.
+    // Reconcile a theme switch that happened while the iframe was loading.
+    const ready=(event:MessageEvent)=>{
+      const frame=root.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+      if(event.origin!=='https://giscus.app'||event.source!==frame?.contentWindow||!event.data?.giscus)return;
+      frame.contentWindow?.postMessage({giscus:{setConfig:{theme:document.documentElement.classList.contains('dark')?'dark':'light'}}},'https://giscus.app');
+      window.removeEventListener('message',ready);
+    };
+    window.addEventListener('message',ready);
+    document.addEventListener('astro:before-swap',()=>window.removeEventListener('message',ready),{once:true});
+    // The reader may switch themes while the external iframe is loading.
+    const observer=new MutationObserver(()=>{
+      const frame=root.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+      if(!frame)return;
+      const theme=document.documentElement.classList.contains('dark')?'dark':'light';
+      // A message sent before the widget is ready can be lost. Ensure the
+      // first iframe request already carries the current theme instead.
+      const url=new URL(frame.src);
+      if(url.searchParams.get('theme')!==theme){url.searchParams.set('theme',theme);frame.src=url.toString();}
+      observer.disconnect();
+    });
+    observer.observe(root,{childList:true,subtree:true});
+    const config={repo:'Maligrond/kaban.blog',repoId:'R_kgDONiRElw',category:'General',categoryId:'DIC_kwDONiREl84ClhBj',mapping:'pathname',strict:'0',reactionsEnabled:'1',emitMetadata:'0',inputPosition:'bottom',theme:document.documentElement.classList.contains('dark')?'dark':'light',lang:'ru'};
+    Object.assign(script.dataset,config);root.append(script);
+  }
+  function initializeComments() {
+    const root=document.querySelector('[data-giscus-root]');if(!root || root.querySelector('script'))return;
+    visibility?.disconnect();
+    if(!('IntersectionObserver' in window)){loadComments(root);return;}
+    visibility=new IntersectionObserver(entries=>{
+      if(entries.some(entry=>entry.isIntersecting)){visibility?.disconnect();loadComments(root);}
+    },{rootMargin:'500px'});
+    visibility.observe(root);
+  }
+  document.addEventListener('astro:before-swap',()=>visibility?.disconnect());
+  initializeComments();
+  document.addEventListener('astro:page-load',initializeComments);
 </script>
+
+<style>.giscus {min-height:300px;}</style>

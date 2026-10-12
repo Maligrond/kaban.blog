@@ -5,6 +5,8 @@ import { glob, file } from 'astro/loaders';
 const blog = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: "./src/content/blog" }),
   schema: ({ image }) => z.object({
+    format: z.enum(["article", "note", "photo", "link"]).default("article"),
+    linkURL: z.url().optional(),
     title: z.string(),
     description: z.string(),
     descriptionAutomatic: z.boolean().optional(),
@@ -16,6 +18,7 @@ const blog = defineCollection({
     excerpt: z.string().optional(),
     cover: image().optional(),
     coverAlt: z.string().optional(),
+    coverDisabled: z.boolean().optional(),
     cities: z.array(reference("countries")).default([]),
   }),
 });
@@ -56,11 +59,11 @@ const reviewFields = {
 };
 const books = defineCollection({
   loader: glob({ pattern: "*.md", base: "./src/content/books" }),
-  schema: z.object({ ...reviewFields, author: z.string() }),
+  schema: ({ image }) => z.object({ cover: image().optional(), coverURL: z.url().optional(), coverAlt: z.string().optional(), coverDisabled: z.boolean().optional(), ...reviewFields, author: z.string(), status: z.enum(["reading", "rereading", "favorite", "finished", "dropped"]).optional() }),
 });
 const games = defineCollection({
   loader: glob({ pattern: "*.md", base: "./src/content/games" }),
-  schema: z.object({ ...reviewFields, year: z.number().int() }),
+  schema: ({ image }) => z.object({ cover: image().optional(), coverURL: z.url().optional(), coverAlt: z.string().optional(), coverDisabled: z.boolean().optional(), ...reviewFields, year: z.number().int(), status: z.enum(["playing", "replaying", "favorite", "finished", "dropped"]).optional() }),
 });
 const movies = defineCollection({
   loader: glob({ pattern: "*.md", base: "./src/content/movies" }),

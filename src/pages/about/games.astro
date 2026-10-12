@@ -7,7 +7,7 @@ const entries = (await getCollection("games")).filter(entry => !entry.data.draft
 ---
 <Layout title="Игры" description="Видеоигры, которые меня впечатлили.">
   <Container>
-    <div class="journal-page-heading">
+    <div class="journal-page-heading" data-author-collection="games">
       <a href="/about/" class="back-to-notes">← Обо мне</a>
       <h1>Игры<span class="accent-dot">.</span></h1>
       <p class="journal-page-intro shelf-intro">Видеоигры, которые меня впечатлили.</p>

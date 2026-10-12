@@ -3,34 +3,150 @@ import Layout from "@layouts/Layout.astro";
 import Container from "@components/Container.astro";
 import { SOCIALS, SITE } from "@consts";
 ---
-<Layout title="Обо мне" description="Немного информации обо мне">
+
+<Layout
+  title="Обо мне"
+  description="Кабан — о жизни, поездках и том, что хочется записать."
+>
   <Container>
-    <div class="journal-page-heading">
-      <p class="eyebrow">Личное</p>
-      <h1>Обо мне<span class="accent-dot">.</span></h1>
-      <p class="journal-page-intro about-greeting">всем ку</p>
-    </div>
-    <div class="journal-columns">
-      <section aria-labelledby="shelves-heading">
-        <div class="section-caption"><h2 id="shelves-heading">Мои подборки</h2></div>
-        <div class="personal-directory">
-          <a href="/about/books/"><span>Книги</span><span aria-hidden="true">↗</span></a>
-          <a href="/about/games/"><span>Игры</span><span aria-hidden="true">↗</span></a>
-          <a href="/about/movies/"><span>Фильмы</span><span aria-hidden="true">↗</span></a>
-          <a href="/about/music/"><span>Музыка</span><span aria-hidden="true">↗</span></a>
+    <div class="about-person">
+      <div class="about-intro">
+        <img
+          src="/android-chrome-512x512.png"
+          width="110"
+          height="110"
+          alt=""
+        />
+        <div>
+          <h1>
+            Всем ку. Я Кабан<span class="accent-dot">.</span>
+          </h1>
+          <p>Этот блог — о моей жизни и опыте.</p>
         </div>
-      </section>
-      <aside class="journal-aside personal-aside">
-        <h2 class="eyebrow">Ещё здесь</h2>
-        <a href="/now/">Сейчас<span>Чем я занят</span></a>
-        <a href="/world/">Мир<span>Места и поездки</span></a>
-        <a href="/bookmarks/">Закладки<span>Ссылки на память</span></a>
-        <div class="aside-contacts">
-          <h2 class="eyebrow">На связи</h2>
-          {SOCIALS.map(social => <a href={social.HREF} target="_blank" rel="noopener noreferrer">{social.NAME} ↗</a>)}
-          {SITE.EMAIL && <a href={`mailto:${SITE.EMAIL}`}>Почта ↗</a>}
+      </div>
+      <div class="about-text">
+        <p>
+          Здесь пишу о жизни и поездках, сохраняю места, книги и игры, к которым
+          хочется вернуться.
+        </p>
+        <p>
+          В <a href="/world/">«Мире»</a> — города, где я побывал. На странице{" "}
+          <a href="/now/">«Сейчас»</a> — чем я занят. Остальное складывается в{" "}
+          <a href="/blog/">блоге</a>.
+        </p>
+      </div>
+      <div class="about-contact">
+        <span>На связи:</span>
+        {SOCIALS.map((social) => (
+          <a href={social.HREF} target="_blank" rel="noopener noreferrer">
+            {social.NAME} ↗
+          </a>
+        ))}
+        {SITE.EMAIL && <a href={`mailto:${SITE.EMAIL}`}>Написать письмо</a>}
+        <a href="/rss.xml">Читать по RSS ↗</a>
+      </div>
+      <nav class="about-shelves" aria-label="Личные подборки">
+        <p>Ещё у меня есть</p>
+        <div>
+          <a href="/about/books/">Книги</a>
+          <a href="/about/games/">Игры</a>
+          <a href="/about/movies/">Фильмы</a>
+          <a href="/about/music/">Музыка</a>
+          <a href="/bookmarks/">Закладки</a>
         </div>
-      </aside>
+      </nav>
     </div>
   </Container>
 </Layout>
+<style>
+  .about-person {
+    max-width: 760px;
+  }
+  .about-intro {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    margin: 6px 0 24px;
+  }
+  .about-intro img {
+    width: 110px;
+    height: 110px;
+    object-fit: contain;
+    flex: none;
+  }
+  .about-intro h1 {
+    font:
+      700 clamp(30px, 4vw, 46px)/1.08 "PT Sans",
+      sans-serif;
+    letter-spacing: -0.04em;
+  }
+  .about-intro p {
+    margin-top: 8px;
+    color: var(--journal-muted);
+    font:
+      17px/1.5 "PT Sans",
+      sans-serif;
+  }
+  .about-text {
+    font:
+      22px/1.55 Georgia,
+      serif;
+  }
+  .about-text p + p {
+    margin-top: 16px;
+  }
+  .about-text a {
+    color: var(--journal-accent);
+    text-decoration: underline;
+    text-decoration-color: var(--journal-rule);
+    text-underline-offset: 4px;
+  }
+  .about-contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+    margin-top: 22px;
+    font:
+      16px/1.5 "PT Sans",
+      sans-serif;
+  }
+  .about-contact span {
+    color: var(--journal-muted);
+  }
+  .about-contact a:hover,
+  .about-shelves a:hover {
+    color: var(--journal-accent);
+  }
+  .about-shelves {
+    margin-top: 30px;
+    padding-top: 18px;
+    border-top: 1px solid var(--journal-rule);
+  }
+  .about-shelves p {
+    font-size: 14px;
+    color: var(--journal-muted);
+    margin-bottom: 8px;
+  }
+  .about-shelves div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 22px;
+    font-size: 19px;
+  }
+  @media (max-width: 640px) {
+    .about-intro {
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .about-intro img {
+      width: 70px;
+      height: 70px;
+    }
+    .about-intro h1 {
+      font-size: 30px;
+    }
+    .about-text {
+      font-size: 20px;
+    }
+  }
+</style>

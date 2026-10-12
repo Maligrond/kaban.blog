@@ -2,7 +2,6 @@
 import Head from "@components/Head.astro";
 import Header from "@components/Header.astro";
 import Footer from "@components/Footer.astro";
-import PageFind from "@components/PageFind.astro";
 import PhotoViewer from "@components/PhotoViewer.astro";
 import AuthorMode from "@components/AuthorMode.astro";
 import { SITE } from "@consts";
@@ -37,7 +36,6 @@ const searchType = /^\/blog\/[^/]+\//.test(pathname) ? "Запись"
     </main>
     <PhotoViewer />
     <Footer />
-    <PageFind />
     <AuthorMode />
   </body>
 </html>

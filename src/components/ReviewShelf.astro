@@ -1,38 +1,363 @@
 ---
 import type { CollectionEntry } from "astro:content";
+import { shelfStatusLabel, shelfStatuses } from "../scripts/author-entries.js";
 import Rating from "@components/Rating.astro";
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+import coverIndex from "../data/shelf-covers.json";
 interface Props {
-  entries: (CollectionEntry<"books"> | CollectionEntry<"games"> | CollectionEntry<"movies">)[];
+  entries: (
+    | CollectionEntry<"books">
+    | CollectionEntry<"games">
+    | CollectionEntry<"movies">
+  )[];
   collection: "books" | "games" | "movies";
 }
 const { entries, collection } = Astro.props;
+const visual = collection !== "movies";
+const coverFiles = import.meta.glob<{ default: ImageMetadata }>(
+  "/src/images/shelves/*.jpg",
+  { eager: true },
+);
+const coverFor = (entry: Props["entries"][number]) => {
+  if ("coverDisabled" in entry.data && entry.data.coverDisabled)
+    return undefined;
+  if ("coverURL" in entry.data && entry.data.coverURL?.startsWith("https://"))
+    return entry.data.coverURL;
+  if ("cover" in entry.data && entry.data.cover) return entry.data.cover;
+  const id = entry.id;
+  const record = (coverIndex as Record<string, { file: string }>)[
+    `${collection}/${id}`
+  ];
+  return record
+    ? coverFiles[`/src/images/shelves/${record.file}`]?.default
+    : undefined;
+};
+const statusChoices = visual
+  ? Object.entries(shelfStatuses[collection] || {}).filter(([status]) =>
+      entries.some(
+        (entry) => "status" in entry.data && entry.data.status === status,
+      ),
+    )
+  : [];
 const shelves = [
   { id: "books", title: "Книги" },
   { id: "games", title: "Игры" },
   { id: "movies", title: "Фильмы" },
 ];
 ---
-<div class="journal-columns">
+
+<div
+  class:list={["journal-columns", { "visual-shelves": visual }]}
+  data-shelf={visual ? collection : undefined}
+  data-view="covers"
+>
   <section aria-label="Список произведений">
-    <div class="section-caption"><span>Сначала новые записи</span><span>Всего: {entries.length}</span></div>
-    <ul class="review-shelf">
-      {entries.map(entry => <li>
-        <a href={`/${collection}/${entry.id}/`} class="review-shelf-link">
-          <div class="review-shelf-info">
-            <h2>{entry.data.title}</h2>
-            <p>{"author" in entry.data ? entry.data.author : entry.data.year}</p>
+    <div class="section-caption">
+      <span>Сначала новые записи</span>
+      <span>Всего: {entries.length}</span>
+    </div>
+    {visual && (
+      <div class="shelf-controls" hidden>
+        {statusChoices.length > 0 && (
+          <div class="shelf-filters" role="group" aria-label="Фильтр подборки">
+            <button type="button" data-shelf-filter="" aria-pressed="true">
+              Все
+            </button>
+            {statusChoices.map(([status, label]) => (
+              <button
+                type="button"
+                data-shelf-filter={status}
+                aria-pressed="false"
+              >
+                {label}
+              </button>
+            ))}
           </div>
-          <Rating value={entry.data.rating} />
-          <span class="review-arrow" aria-hidden="true">↗</span>
-        </a>
-      </li>)}
+        )}
+        <div class="shelf-views" role="group" aria-label="Вид подборки">
+          <button type="button" data-shelf-view="covers" aria-pressed="true">
+            Обложки
+          </button>
+          <button type="button" data-shelf-view="list" aria-pressed="false">
+            Список
+          </button>
+        </div>
+      </div>
+    )}
+    <p class="shelf-filter-status" role="status" hidden></p>
+    <ul class:list={["review-shelf", { "cover-shelf": visual }]}>
+      {entries.map((entry) => (
+        <li data-shelf-status={"status" in entry.data ? entry.data.status : ""}>
+          <a href={`/${collection}/${entry.id}/`} class="review-shelf-link">
+            {visual && (
+              <div class="shelf-cover">
+                {typeof coverFor(entry) === "string" ? (
+                  <img
+                    src={coverFor(entry) as string}
+                    alt={
+                      "coverAlt" in entry.data ? entry.data.coverAlt || "" : ""
+                    }
+                    width="180"
+                    height="270"
+                    loading="lazy"
+                    data-external-cover
+                  />
+                ) : coverFor(entry) ? (
+                  <Image
+                    src={coverFor(entry) as ImageMetadata}
+                    alt=""
+                    widths={[180, 360]}
+                    sizes="(max-width: 480px) 40vw, 180px"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div class="shelf-cover-type">
+                    <span>
+                      {collection === "books" && "author" in entry.data
+                        ? entry.data.author
+                        : "Игра"}
+                    </span>
+                    <strong>{entry.data.title}</strong>
+                  </div>
+                )}
+              </div>
+            )}
+            <div class="review-shelf-info">
+              <h2>{entry.data.title}</h2>
+              <p class:list={{ "shelf-detail": visual }}>
+                {"author" in entry.data ? entry.data.author : entry.data.year}
+              </p>
+            </div>
+            <Rating value={entry.data.rating} />
+            {"status" in entry.data &&
+              shelfStatusLabel(collection, entry.data.status) && (
+                <span class="shelf-status">
+                  {shelfStatusLabel(collection, entry.data.status)}
+                </span>
+              )}
+            {!visual && (
+              <span class="review-arrow" aria-hidden="true">
+                ↗
+              </span>
+            )}
+          </a>
+        </li>
+      ))}
     </ul>
-    {entries.length === 0 && <p class="journal-page-intro">Здесь пока нет записей.</p>}
+    {entries.length === 0 && (
+      <p class="journal-page-intro">Здесь пока нет записей.</p>
+    )}
   </section>
   <aside class="journal-aside shelf-aside">
     <h2 class="eyebrow">Другие подборки</h2>
-    {shelves.filter(shelf => shelf.id !== collection).map(shelf => <a href={`/about/${shelf.id}/`}>{shelf.title} ↗</a>)}
+    {shelves
+      .filter((shelf) => shelf.id !== collection)
+      .map((shelf) => (
+        <a href={`/about/${shelf.id}/`}>{shelf.title} ↗</a>
+      ))}
     <a href="/about/music/">Музыка ↗</a>
-    <p class="rating-explanation">Оценки — мои личные впечатления, по шкале от 1 до 5.</p>
+    <p class="rating-explanation">
+      Оценки — мои личные впечатления, по шкале от 1 до 5.
+    </p>
   </aside>
 </div>
+<style>
+  .visual-shelves {
+    display: block;
+  }
+  .cover-shelf {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+    gap: 28px 24px;
+    max-width: 1080px;
+    margin-top: 18px;
+  }
+  .cover-shelf li {
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+  .cover-shelf .review-shelf-link {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 6px;
+    padding: 0;
+    border: 0;
+  }
+  .cover-shelf .review-shelf-info {
+    flex: none;
+  }
+  .shelf-cover {
+    flex: none;
+    width: 100%;
+    aspect-ratio: 2/3;
+    margin-bottom: 4px;
+    background: var(--journal-rule);
+    overflow: hidden;
+    box-shadow: 1px 3px 8px var(--shelf-cover-shadow);
+  }
+  .shelf-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .shelf-cover-type {
+    height: 100%;
+    padding: 18px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: var(--shelf-cover-paper);
+    color: var(--journal-ink);
+    border-left: 4px solid var(--shelf-cover-spine);
+  }
+  .shelf-cover-type span {
+    font:
+      12px/1.3 "PT Sans",
+      sans-serif;
+  }
+  .shelf-cover-type strong {
+    font:
+      700 18px/1.2 "PT Sans",
+      sans-serif;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+  .shelf-cover-type {
+    overflow: hidden;
+  }
+  .shelf-cover-type strong {
+    display: -webkit-box;
+    -webkit-line-clamp: 7;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .cover-shelf .review-shelf-info h2 {
+    font-size: 18px;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+    margin: 0;
+  }
+  .cover-shelf :global(.review-rating) {
+    align-self: flex-start;
+    font-size: 13px;
+  }
+  .visual-shelves .shelf-aside {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px 20px;
+    margin-top: 32px;
+    padding-top: 18px;
+    border-top: 1px solid var(--journal-rule);
+  }
+  .visual-shelves .shelf-aside h2 {
+    margin: 0;
+  }
+  .visual-shelves .shelf-aside a {
+    margin: 0;
+    font-size: 16px;
+  }
+  .visual-shelves .rating-explanation {
+    width: 100%;
+    margin-top: 5px;
+    font-size: 13px;
+  }
+  @media (max-width: 480px) {
+    .cover-shelf {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px 18px;
+    }
+  }
+</style>
+
+<script>
+  import { initializeShelves } from "../scripts/review-shelves.js";
+  initializeShelves();
+  document.addEventListener("astro:page-load", initializeShelves);
+</script>
+<style is:global>
+  .shelf-controls {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 24px;
+    margin-top: 16px;
+    font:
+      14px/1.5 "PT Sans",
+      sans-serif;
+  }
+  .shelf-controls[hidden] {
+    display: none;
+  }
+  .shelf-filters,
+  .shelf-views {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .shelf-views {
+    margin-left: auto;
+  }
+  .shelf-controls button {
+    color: var(--journal-muted);
+    padding-block: 5px;
+    border-bottom: 1px solid transparent;
+    cursor: pointer;
+  }
+  .shelf-controls button[aria-pressed="true"] {
+    color: var(--journal-accent);
+    border-bottom-color: currentColor;
+  }
+  .shelf-filter-status {
+    margin-top: 12px;
+    color: var(--journal-muted);
+    font-size: 14px;
+  }
+  .cover-shelf li[hidden] {
+    display: none;
+  }
+  [data-shelf][data-view="covers"] .shelf-detail {
+    display: none;
+  }
+  [data-shelf][data-view="list"] .cover-shelf {
+    display: block;
+    margin-top: 12px;
+  }
+  [data-shelf][data-view="list"] .cover-shelf li + li {
+    border-top: 1px solid var(--journal-rule);
+  }
+  [data-shelf][data-view="list"] .cover-shelf .review-shelf-link {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px 20px;
+    padding-block: 12px;
+  }
+  [data-shelf][data-view="list"] .shelf-cover {
+    display: none;
+  }
+  [data-shelf][data-view="list"] .shelf-status {
+    grid-column: 2;
+    text-align: right;
+  }
+  [data-shelf][data-view="list"] .review-shelf-info {
+    grid-row: 1 / span 2;
+  }
+  [data-shelf][data-view="list"] .review-shelf-info h2 {
+    font-size: 21px;
+  }
+  [data-shelf][data-view="list"] .shelf-detail {
+    margin-top: 3px;
+    color: var(--journal-muted);
+    font-size: 14px;
+  }
+</style>
+
+<style is:global>
+  [data-external-cover][hidden] { display:none; }
+</style>

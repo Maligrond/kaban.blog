@@ -24,7 +24,8 @@ export function initializeGalleries(root = document) {
     figures.forEach(figure=>{
       const image=figure.querySelector('img');
       if(!image)return;
-      const size=()=>{if(image.naturalWidth && image.naturalHeight)figure.style.setProperty('--photo-ratio',String(image.naturalWidth/image.naturalHeight));};
+      const size=()=>{const width=Number(image.getAttribute('width')) || image.naturalWidth;const height=Number(image.getAttribute('height')) || image.naturalHeight;if(width && height)figure.style.setProperty('--photo-ratio',String(width/height));};
+      size();
       if(image.complete)size();else image.addEventListener('load',size,{once:true});
     });
     track.addEventListener('keydown',event=>{

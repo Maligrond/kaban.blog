@@ -1,5 +1,5 @@
 import type { Map as LeafletMap, Marker } from 'leaflet';
-type Place = {id:string; title:string; country:string; coordinates:[number,number]; rating:number; summary:string; href:string; photo:string|null; photoAlt:string; stories:{title:string;href:string}[]};
+type Place = {id:string; title:string; country:string; coordinates:[number,number]; rating:number; summary:string; href:string; photo:string|null; photoAlt:string};
 
 // Content is inserted as text nodes, never interpreted as popup HTML.
 function placeCard(place: Place) {
@@ -10,7 +10,6 @@ function placeCard(place: Place) {
   add('p',`${place.country} · ${place.rating} из 5`,'travel-map-meta');
   if(place.summary)add('p',place.summary);
   const link=add('a','О городе →') as HTMLAnchorElement;link.href=place.href;
-  for(const story of place.stories){const link=add('a',story.title,'travel-map-story') as HTMLAnchorElement;link.href=story.href;}
   return card;
 }
 export function setupTravelMap(){
@@ -63,7 +62,7 @@ export function setupTravelMap(){
           marker.on('popupclose',()=>{marker.getElement()?.classList.remove('is-selected');});
         }
         region('world');status.textContent='Нажми на точку, чтобы посмотреть город.';
-      }catch(error){map?.remove();map=undefined;markers.clear();status.textContent='Не удалось загрузить карту. Закрой и открой её, чтобы попробовать снова. Список городов доступен ниже.';}
+      }catch(error){console.warn('Не удалось загрузить карту поездок:',error);map?.remove();map=undefined;markers.clear();status.textContent='Не удалось загрузить карту. Закрой и открой её, чтобы попробовать снова. Список городов доступен ниже.';}
       finally{initializing=false;}
     });
   });

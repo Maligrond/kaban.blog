@@ -1,20 +1,17 @@
 ---
 import type { CollectionEntry } from 'astro:content';
-import { getCollection } from 'astro:content';
 import { getImage } from 'astro:assets';
 import { postSummary } from '../lib/post-text.js';
 import { resolveCityCoordinates } from '../lib/city-geocoding.js';
 interface Props { cities: CollectionEntry<'countries'>[] }
 const { cities } = Astro.props;
 const locatedCities = await resolveCityCoordinates(cities);
-const stories = (await getCollection('blog')).filter(post => !post.data.draft);
 const places = await Promise.all(locatedCities.sort((a,b) => a.data.title.localeCompare(b.data.title,'ru')).map(async city => ({
   id: city.id, title: city.data.title, country: city.data.country,
   coordinates: city.data.coordinates!, rating: city.data.rating,
   summary: postSummary(city.body, 150), href: `/countries/${city.id}/`,
   photo: city.data.photo ? (await getImage({src: city.data.photo, width: 440, format: 'webp'})).src : null,
   photoAlt: city.data.photoAlt || city.data.title,
-  stories: stories.filter(post => post.data.cities.some(place => place.id === city.id)).map(post => ({title: post.data.title, href: `/blog/${post.id}/`})),
 })));
 ---
 {places.length > 0 && <details class="travel-map" data-travel-map data-pagefind-ignore>
@@ -74,7 +71,6 @@ const places = await Promise.all(locatedCities.sort((a,b) => a.data.title.locale
   .travel-map-card .travel-map-meta { margin:3px 0 8px; color:var(--journal-muted); font-size:13px; }
   .travel-map-card p { margin:8px 0; }
   .travel-map-card a { color:var(--journal-accent); text-decoration:underline; text-underline-offset:3px; }
-  .travel-map-story { display:block; margin-top:8px; }
   @media(max-width:640px) { .travel-map-canvas { height:380px; } .travel-map-tools { align-items:flex-start; } .travel-map-tools select { width:100%; } .travel-map-regions button { min-height:32px; } }
   @media(prefers-reduced-motion:reduce) { .travel-map-chevron { transition:none; } }
 </style>

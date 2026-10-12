@@ -67,6 +67,8 @@ collections:
         field: draft
         pattern: false
     fields:
+      - { label: "Формат", name: "format", widget: "select", default: "article", options: [{ label: "История", value: "article" }, { label: "Короткая запись", value: "note" }, { label: "Фотопост", value: "photo" }, { label: "Ссылка с комментарием", value: "link" }] }
+      - { label: "Адрес ссылки", name: "linkURL", widget: "string", required: false }
       - { label: "Заголовок", name: "title", widget: "string", required: true }
       - { label: "Текст", name: "body", widget: "markdown", hint: "В Markdown можно использовать :::details Заголовок … :::, сноски [^note] с пояснением [^note]: Текст, и полный URL отдельным абзацем для карточки. Примеры есть в подсказке встроенного редактора." }
       - { label: "Короткое описание", name: "description", widget: "text", required: true, hint: "Одно-два предложения для превью и поисковиков." }
@@ -95,6 +97,11 @@ collections:
       - { label: "Автор", name: "author", widget: "string", required: true }
       - { label: "Дата прочтения", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
       - { label: "Оценка", name: "rating", widget: "number", value_type: "int", min: 1, max: 5, step: 1, required: true }
+      - { label: "Пометка", name: "status", widget: "select", required: false, options: [{ label: "Читаю", value: "reading" }, { label: "Перечитываю", value: "rereading" }, { label: "Любимая", value: "favorite" }, { label: "Прочитал", value: "finished" }, { label: "Забросил", value: "dropped" }] }
+      - { label: "Обложка", name: "cover", widget: "image", required: false, media_folder: "", public_folder: "" }
+      - { label: "Обложка по ссылке", name: "coverURL", widget: "string", required: false }
+      - { label: "Описание обложки", name: "coverAlt", widget: "string", required: false }
+      - { label: "Убрать стандартную обложку", name: "coverDisabled", widget: "boolean", required: false, default: false }
       - { label: "Черновик", name: "draft", widget: "boolean", default: false, required: false }
       - { label: "Ссылка", name: "url", widget: "string", required: false }
       - { label: "Заметки", name: "body", widget: "markdown", required: false }
@@ -114,6 +121,11 @@ collections:
       - { label: "Год выхода", name: "year", widget: "number", value_type: "int", required: true }
       - { label: "Дата", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
       - { label: "Оценка", name: "rating", widget: "number", value_type: "int", min: 1, max: 5, step: 1, required: true }
+      - { label: "Пометка", name: "status", widget: "select", required: false, options: [{ label: "Играю", value: "playing" }, { label: "Перепрохожу", value: "replaying" }, { label: "Любимая", value: "favorite" }, { label: "Прошёл", value: "finished" }, { label: "Забросил", value: "dropped" }] }
+      - { label: "Обложка", name: "cover", widget: "image", required: false, media_folder: "", public_folder: "" }
+      - { label: "Обложка по ссылке", name: "coverURL", widget: "string", required: false }
+      - { label: "Описание обложки", name: "coverAlt", widget: "string", required: false }
+      - { label: "Убрать стандартную обложку", name: "coverDisabled", widget: "boolean", required: false, default: false }
       - { label: "Черновик", name: "draft", widget: "boolean", default: false, required: false }
       - { label: "Ссылка", name: "url", widget: "string", required: false }
       - { label: "Заметки", name: "body", widget: "markdown", required: false }

@@ -1,0 +1,84 @@
+{
+  "games/ac-odyssey": {
+    "file": "games-ac-odyssey.jpg",
+    "source": "https://store.steampowered.com/app/812140/"
+  },
+  "games/skyrim": {
+    "file": "games-skyrim.jpg",
+    "source": "https://store.steampowered.com/app/72850/"
+  },
+  "games/portal-2": {
+    "file": "games-portal-2.jpg",
+    "source": "https://store.steampowered.com/app/620/"
+  },
+  "books/chelovek-kombini": {
+    "file": "books-chelovek-kombini.jpg",
+    "source": "https://openlibrary.org/search?q=chelovek+kombini"
+  },
+  "games/witcher-3": {
+    "file": "games-witcher-3.jpg",
+    "source": "https://store.steampowered.com/app/292030/"
+  },
+  "games/dota-2": {
+    "file": "games-dota-2.jpg",
+    "source": "https://store.steampowered.com/app/570/"
+  },
+  "games/cyberpunk-2077": {
+    "file": "games-cyberpunk-2077.jpg",
+    "source": "https://store.steampowered.com/app/1091500/"
+  },
+  "books/solaris": {
+    "file": "books-solaris.jpg",
+    "source": "https://openlibrary.org/search?q=solaris"
+  },
+  "books/harry-potter-2": {
+    "file": "books-harry-potter-2.jpg",
+    "source": "https://openlibrary.org/search?q=harry+potter+2"
+  },
+  "books/harry-potter-3": {
+    "file": "books-harry-potter-3.jpg",
+    "source": "https://openlibrary.org/search?q=harry+potter+3"
+  },
+  "games/team-fortress-2": {
+    "file": "games-team-fortress-2.jpg",
+    "source": "https://store.steampowered.com/app/440/"
+  },
+  "books/harry-potter-1": {
+    "file": "books-harry-potter-1.jpg",
+    "source": "https://openlibrary.org/search?q=harry+potter+1"
+  },
+  "books/harry-potter-4": {
+    "file": "books-harry-potter-4.jpg",
+    "source": "https://openlibrary.org/search?q=harry+potter+4"
+  },
+  "books/harry-potter-5": {
+    "file": "books-harry-potter-5.jpg",
+    "source": "https://openlibrary.org/search?q=harry+potter+5"
+  },
+  "books/harry-potter-7": {
+    "file": "books-harry-potter-7.jpg",
+    "source": "https://openlibrary.org/search?q=harry+potter+7"
+  },
+  "books/harry-potter-6": {
+    "file": "books-harry-potter-6.jpg",
+    "source": "https://openlibrary.org/search?q=harry+potter+6"
+  },
+  "books/zemlyanoidy": {
+    "file": "books-zemlyanoidy.jpg",
+    "source": "https://covers.openlibrary.org/b/id/10875316-M.jpg?default=false",
+    "reference": "https://openlibrary.org/works/OL24350404W",
+    "title": "地球星人"
+  },
+  "books/bestsvetniy-tsukuru-tadzaki": {
+    "file": "books-bestsvetniy-tsukuru-tadzaki.jpg",
+    "source": "https://covers.openlibrary.org/b/id/7852099-M.jpg?default=false",
+    "reference": "https://openlibrary.org/works/OL16810121W",
+    "title": "色彩を持たない多崎つくると、彼の巡礼の年"
+  },
+  "books/tak-govoril-zaratustra": {
+    "file": "books-tak-govoril-zaratustra.jpg",
+    "source": "https://covers.openlibrary.org/b/id/1017466-M.jpg?default=false",
+    "reference": "https://openlibrary.org/works/OL98130W",
+    "title": "Also sprach Zarathustra"
+  }
+}

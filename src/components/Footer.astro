@@ -1,6 +1,6 @@
 ---
 import Container from "@components/Container.astro";
-import { SITE } from "@consts";
+import { SITE, SOCIALS } from "@consts";
 import BackToTop from "@components/BackToTop.astro";
 ---
 
@@ -11,12 +11,17 @@ import BackToTop from "@components/BackToTop.astro";
         <BackToTop />
       </div>
     </div>
+    <nav class="footer-links" aria-label="Полезные ссылки">
+      <a href="/rss.xml">RSS</a><a href="/archive/">Архив</a><button type="button" data-open-search>Поиск</button>
+      {SOCIALS.map(social=><a href={social.HREF} target="_blank" rel="noopener noreferrer">{social.NAME} ↗</a>)}
+      {SITE.EMAIL && <a href={`mailto:${SITE.EMAIL}`}>Написать</a>}
+    </nav>
     <div class="footer-content">
       <div class="footer-signature">
         <span>&copy; {new Date().getFullYear()} • {SITE.TITLE}</span>
         <a class="footer-author-link" href="/author/" data-astro-reload aria-label="Вход автора через GitHub" title="Вход автора">🐗</a>
       </div>
-      <div class="theme-controls">
+      <div class="theme-controls" role="group" aria-label="Тема оформления">
         <button
           id="light-theme-button"
           aria-label="Светлая тема" title="Светлая тема"
@@ -93,6 +98,10 @@ import BackToTop from "@components/BackToTop.astro";
 </footer>
 
 <style>
+  .footer-links { display:flex; flex-wrap:wrap; gap:8px 22px; margin-bottom:14px; font:15px/1.5 "PT Sans",sans-serif; color:var(--journal-muted); }
+  .footer-links :is(a,button):hover {color:var(--journal-accent);}
+  .footer-links button {cursor:pointer;}
+  .footer-links :is(a,button) {padding-block:4px;}
   .footer-signature { display: flex; align-items: center; gap: 6px; }
   .footer-author-link { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; min-height: 44px; text-decoration: none; opacity: .65; }
   .footer-author-link:hover, .footer-author-link:focus-visible { opacity: 1; }

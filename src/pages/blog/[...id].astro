@@ -6,6 +6,7 @@ import Container from "@components/Container.astro";
 import FormattedDate from "@components/FormattedDate.astro";
 import Giscus from "@components/Giscus.astro";
 import RelatedPosts from "@components/RelatedPosts.astro";
+import {getImage} from 'astro:assets';
 
 export async function getStaticPaths() {
   const posts = (await getCollection("blog"))
@@ -28,13 +29,15 @@ const cities = post.data.cities
   .map(reference => allCities.find(city => city.id === reference.id))
   .filter((city): city is CollectionEntry<"countries"> => !!city && !city.data.draft);
 const { Content } = await render(post);
+const shareImage=post.data.coverDisabled ? undefined : post.data.cover ? (await getImage({src:post.data.cover,width:Math.min(post.data.cover.width,1200),format:'jpeg'})).src : post.data.previewImage;
 ---
 
-<Layout title={post.data.title} description={post.data.description} image={post.data.previewImage || post.data.cover?.src} searchDescription={postSummary(post.data.excerpt || post.body, 180) || post.data.description}>
+<Layout title={post.data.title} description={post.data.description} image={shareImage} searchDescription={postSummary(post.data.excerpt || post.body, 180) || post.data.description}>
   <Container>
     <div class="post-heading blog-post-heading" data-author-path={`src/content/blog/${post.id}/index.md`}>
       <a class="back-to-notes" href="/blog/">← Все записи</a>
-      <h1>{post.data.title}</h1>
+      {post.data.format!=='note' && <h1>{post.data.title}</h1>}
+      {post.data.format==='link' && post.data.linkURL && /^https?:\/\//.test(post.data.linkURL) && <a class="post-source-link" href={post.data.linkURL} target="_blank" rel="noopener noreferrer">{new URL(post.data.linkURL).hostname} ↗</a>}
     </div>
     <article class="post-content blog-post-content">
       <div class="post-photo-content"><Content /></div>

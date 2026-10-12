@@ -7,7 +7,7 @@ const entries = (await getCollection("books")).filter(entry => !entry.data.draft
 ---
 <Layout title="Книги" description="Здесь я делюсь книгами, которые прочитал и считаю достойными внимания.">
   <Container>
-    <div class="journal-page-heading">
+    <div class="journal-page-heading" data-author-collection="books">
       <a href="/about/" class="back-to-notes">← Обо мне</a>
       <h1>Книги<span class="accent-dot">.</span></h1>
       <p class="journal-page-intro shelf-intro">Здесь я делюсь книгами, которые прочитал и считаю достойными внимания.</p>

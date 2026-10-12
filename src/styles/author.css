@@ -7,7 +7,7 @@
 .author-editor-top { justify-content: space-between; margin-bottom: 20px; }
 .author-field { display: block; margin-bottom: 18px; }
 .author-field > span { display: block; margin-bottom: 7px; font: 13px/1.4 'PT Sans', sans-serif; color: var(--journal-muted); }
-.author-field input, .author-field textarea { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--journal-rule); border-radius: 3px; color: var(--journal-ink); background: var(--journal-paper); font: 17px/1.5 'PT Sans', sans-serif; }
+.author-field input, .author-field textarea, .author-field select { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--journal-rule); border-radius: 3px; color: var(--journal-ink); background: var(--journal-paper); font: 17px/1.5 'PT Sans', sans-serif; }
 .author-field input:focus, .author-field textarea:focus { outline: 1px solid var(--journal-accent); outline-offset: 1px; }
 .author-field-title input { padding-inline: 0; border: 0; border-radius: 0; font-size: clamp(30px,5vw,48px); font-weight: 700; line-height: 1.15; }
 .author-field-body textarea { resize: vertical; min-height: 300px; font: 20px/1.5 Georgia, serif; }
@@ -73,3 +73,30 @@
 .author-tag-dialog [hidden] { display: none; }
 .author-tag-dialog button:disabled { opacity: .5; }
 @media (max-width: 540px) { .author-tag-dialog { padding: 18px; } }
+.author-editor[data-preview="true"] { max-width:1060px; }
+.author-preview-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px 24px; margin-bottom:24px; padding-block:10px; border-block:1px solid var(--journal-rule); font:14px/1.5 'PT Sans',sans-serif; }
+.author-preview-comments { margin-top:30px; color:var(--journal-muted); font:14px/1.5 'PT Sans',sans-serif; }
+.author-shelf-fields { margin-bottom:8px; }
+.author-field input[type="checkbox"] { width:20px; height:20px; accent-color:var(--journal-accent); }
+.author-shelf-editor .author-field-body textarea { min-height:140px; }
+.author-field-excerpt { grid-column:1 / -1; }
+.author-publication-results { list-style: none; margin-block: 16px; overflow-wrap: anywhere; }
+.author-publication-results li { margin-block: 8px; }
+.author-publication-error { color: var(--journal-accent); font-family: monospace; font-size: 14px; }
+.author-editor button[hidden] { display: none; }
+.author-photo-progress { display: block; width: 100%; height: 5px; margin-top: 16px; accent-color: var(--journal-accent); }
+.author-cover-panel { display:flex; gap:16px; align-items:center; margin:20px 0; padding-block:14px; border-block:1px solid var(--journal-rule); font:15px/1.4 'PT Sans',sans-serif; }
+.author-cover-panel button { margin-right:16px; }
+.author-cover-thumb { width:100px; height:72px; object-fit:cover; }
+.author-cover-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:16px; margin:20px 0; }
+.author-cover-option { padding:0; text-align:left; font:14px/1.4 'PT Sans',sans-serif; }
+.author-cover-option img { display:block; width:100%; height:120px; object-fit:cover; margin-bottom:6px; }
+.author-cover-option[aria-pressed="true"] img { outline:2px solid var(--journal-accent); outline-offset:3px; }
+.author-cover-option:disabled { opacity:.5; }
+.author-link-results { max-height:260px; overflow-y:auto; margin:8px 0 18px; }
+.author-link-results button { display:block; width:100%; text-align:left; padding:8px 0; border-bottom:1px solid var(--journal-rule); }
+.author-link-results small { display:block; color:var(--journal-muted); font:12px/1.4 'PT Sans',sans-serif; }
+
+.author-save-notice { padding-block:8px; color:var(--journal-accent); border-bottom:1px solid var(--journal-rule); font-size:14px; }
+
+.author-cover-link-input { width:100%; margin-top:8px; padding:10px; color:var(--journal-ink); background:var(--journal-paper); border:1px solid var(--journal-rule); }

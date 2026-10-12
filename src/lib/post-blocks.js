@@ -1,4 +1,4 @@
-import { escapeHTML } from './post-text.js';
+import { escapeHTML } from './escape-html.js';
 // Shared by the static Markdown renderer and the author's preview. Fenced
 // code examples are left alone; unmatched blocks stay visible as plain text.
 export function preparePostBlocks(source) {

@@ -1,4 +1,6 @@
 ---
+import "../styles/related-posts.css";
+import {relatedPostsFor} from "../lib/related-posts.js";
 import type { CollectionEntry } from "astro:content";
 import type { ImageMetadata } from "astro";
 import { Image } from "astro:assets";
@@ -9,17 +11,12 @@ type Props = {
   allPosts: CollectionEntry<"blog">[];
 };
 const { currentPostId, currentTags, allPosts } = Astro.props;
-const tags = new Set(currentTags.map(tag => tag.trim().toLocaleLowerCase("ru")));
-const relatedPosts = allPosts
-  .filter(post => post.id !== currentPostId && !post.data.draft)
-  .map(post => ({ post, score: (post.data.tags || []).filter(tag => tags.has(tag.trim().toLocaleLowerCase("ru"))).length }))
-  .filter(item => item.score > 0)
-  .sort((a, b) => b.score - a.score || b.post.data.date.valueOf() - a.post.data.date.valueOf() || a.post.id.localeCompare(b.post.id))
-  .slice(0, 4)
-  .map(item => item.post);
+const relatedIds = relatedPostsFor(currentPostId, currentTags, allPosts.filter(post=>!post.data.draft).map(post=>({id:post.id,tags:post.data.tags || [],date:post.data.date.toISOString()}))).map(post=>post.id);
+const relatedPosts = relatedIds.map(id=>allPosts.find(post=>post.id===id)!);
 
 const images = import.meta.glob<ImageMetadata>("/src/content/blog/**/*.{jpg,jpeg,png,webp,avif}", { eager: true, import: "default" });
 function thumbnail(post: CollectionEntry<"blog">) {
+  if(post.data.coverDisabled)return undefined;
   if (post.data.cover) return post.data.cover;
   if (post.data.previewImage) return post.data.previewImage;
   const match = post.body?.match(/!\[[^\]]*\]\((?:<([^>]+)>|([^\s)]+))/);
@@ -48,25 +45,3 @@ function thumbnail(post: CollectionEntry<"blog">) {
     })}
   </ul>
 </section>}
-
-<style>
-  .further-posts { margin-top: 32px; font-family: "PT Sans", sans-serif; }
-  .further-posts > h2 { margin: 0 0 12px; font-size: 24px; line-height: 1.2; font-weight: 700; letter-spacing: -.02em; }
-  .further-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px 16px; margin: 0; padding: 0; list-style: none; }
-  .further-grid-few { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .further-card { min-width: 0; padding: 0; margin: 0; }
-  .further-lead { grid-column: span 2; }
-  .further-grid-few .further-lead { grid-column: auto; }
-  .further-link { display: block; color: var(--journal-ink); text-decoration: none; }
-  .further-link .further-photo { display: block; width: 100%; height: auto; aspect-ratio: 8 / 5; object-fit: cover; margin: 0 0 8px; }
-  .further-link h3 { margin: 0; font-size: 19px; line-height: 1.25; font-weight: 400; letter-spacing: -.01em; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; text-decoration-color: var(--journal-rule); overflow-wrap: anywhere; }
-  .further-lead h3 { font-size: 25px; font-weight: 700; }
-  .further-link:hover h3 { color: var(--journal-accent); text-decoration-color: var(--journal-accent); }
-  .further-excerpt { margin: 8px 0 4px; font: 17px/1.4 "PT Sans", sans-serif; }
-  .further-date { display: block; margin-top: 5px; color: var(--journal-muted); font-size: 13px; line-height: 1.4; }
-  @media (max-width: 640px) {
-    .further-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; }
-    .further-grid .further-lead { grid-column: 1 / -1; }
-    .further-lead h3 { font-size: 23px; }
-  }
-</style>

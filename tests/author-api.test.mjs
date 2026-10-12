@@ -106,3 +106,118 @@ test('retry never publishes another editors newer draft',async()=>{
   assert.equal((await api.publish(entryPath,saved)).publication,'pending');
   assert.equal(state.calls.filter(call=>call.route.endsWith('/merges')).length,count);
 });
+
+test('GitHub drafts combine main files and workflow branches, with the branch taking precedence',async()=>{
+  const api=new AuthorAPI({type:'github',token:'test'});
+  const requests=[];
+  const mainDraft='src/content/blog/how-this-blog-works/index.md';
+  const existing='src/content/blog/italian/index.md';
+  const newDraft='src/content/blog/new-story/index.md';
+  const now='src/content/pages/now/index.md';
+  api.github=async route=>{
+    requests.push(route);
+    if(route.includes('/matching-refs/'))return [
+      {ref:'refs/heads/codex/author/italian'},
+      {ref:'refs/heads/codex/author/new-story'},
+      {ref:'refs/heads/codex/author-pages/now'},
+      {ref:'refs/heads/codex/author-unrelated/ignore'},
+    ];
+    if(route.includes('/git/trees/'))return {truncated:false,tree:[mainDraft,existing,now,'src/content/movies/example.md','src/content/blog/example/index.mdx'].map(path=>({type:'blob',path}))};
+    const branch=route.includes('ref=codex%2F');
+    return {content:Buffer.from(branch?'---\ntitle: Из ветки\ndraft: false\n---\nНовая версия':'---\ntitle: Из main\ndraft: true\n---\nЧерновик').toString('base64')};
+  };
+  const items=await api.drafts();
+  assert.equal(items.length,4);
+  assert.equal(items.find(item=>item.path===mainDraft).workflow,false);
+  assert.match(items.find(item=>item.path===mainDraft).raw,/Черновик/);
+  assert.match(items.find(item=>item.path===existing).raw,/Новая версия/);
+  assert.equal(items.find(item=>item.path===existing).workflow,true);
+  assert.equal(items.find(item=>item.path===newDraft).workflow,true);
+  assert.equal(items.find(item=>item.path===now).workflow,true);
+  assert.equal(requests.filter(route=>route.includes('/contents/')).length,4);
+  assert.ok(!requests.some(route=>route.includes('countries')||route.includes('index.mdx')));
+});
+test('a truncated GitHub tree reports a retrieval failure rather than an empty drafts list',async()=>{
+  const api=new AuthorAPI({type:'github',token:'test'});
+  api.github=async route=>route.includes('/matching-refs/')?[]:{truncated:true,tree:[]};
+  await assert.rejects(api.drafts(),/полный список/);
+});
+
+test('shelf paths are limited and isolated from post workflow branches',()=>{
+  const api=new AuthorAPI({type:'github'});
+  for(const collection of ['books','games','countries']) {
+    assert.equal(validPath(`src/content/${collection}/example.md`),true);
+    assert.equal(api.branch(`src/content/${collection}/example.md`),`codex/author-shelves/${collection}/example`);
+  }
+  for(const path of ['src/content/books/../secret.md','src/content/books/a/b.md','src/content/books/a.mdx','src/content/movies/a.md','public/a.md'])assert.equal(validPath(path),false);
+});
+test('shelf workflow drafts override main entries and unsupported branches are ignored',async()=>{
+  const api=new AuthorAPI({type:'github'});
+  api.github=async route=>{
+    if(route.includes('matching-refs'))return [{ref:'refs/heads/codex/author-shelves/books/new-book'},{ref:'refs/heads/codex/author-shelves/movies/invalid'}];
+    if(route.includes('/trees/'))return {truncated:false,tree:[{type:'blob',path:'src/content/books/new-book.md'}]};
+    assert.ok(route.includes('ref=codex%2Fauthor-shelves%2Fbooks%2Fnew-book'));
+    return {content:Buffer.from('draft').toString('base64')};
+  };
+  assert.deepEqual(await api.drafts(),[{path:'src/content/books/new-book.md',raw:'draft',workflow:true}]);
+});
+test('invalid shelf or photo path is rejected before GitHub writes',async()=>{
+  const api=new AuthorAPI({type:'github'});
+  api.verify=async()=>assert.fail('must reject before verification');
+  await assert.rejects(api.save('src/content/books/../secret.md','raw',{},[],false));
+  await assert.rejects(api.save('src/content/books/a.md','raw',{},[{path:'src/content/books/../secret.jpg'}],false));
+});
+
+test('draft photos come from the exact workflow branch, including larger GitHub blobs',async()=>{
+  const api=new AuthorAPI({type:'github'});api.verify=async()=>{};
+  const routes=[];
+  api.github=async route=>{routes.push(route);return route.includes('/contents/')?{encoding:'none',sha:'photo',size:2000000}:{encoding:'base64',content:Buffer.from('image').toString('base64')};};
+  const photo=await api.readPreviewPhoto('src/content/blog/new-story/index.md','photo.jpg','codex/author/new-story');
+  assert.equal(photo.type,'image/jpeg');assert.equal(Buffer.from(photo.content,'base64').toString(),'image');
+  assert.match(routes[0],/ref=codex%2Fauthor%2Fnew-story/);assert.match(routes[1],/git\/blobs\/photo/);
+});
+test('draft photo reads reject traversal, unsafe formats and unrelated branches',async()=>{
+  const api=new AuthorAPI({type:'github'});api.verify=async()=>assert.fail('invalid photo must not be read');
+  for(const [source,branch] of [['../secret.jpg','main'],['..%2Fsecret.jpg','main'],['https://example.com/a.jpg','main'],['a.svg','main'],['a.jpg','other-branch']])await assert.rejects(api.readPreviewPhoto('src/content/books/book.md',source,branch));
+});
+
+test('unpublishing changes draft flag, preserves workflow text and merges exactly saved commit',async()=>{
+  const {api,state}=publishingAPI();
+  const published={branch:'main',sha:'published',raw:'---\ntitle: Italy\ndraft: false\n---\nPublished text\n'};
+  const editing={branch:'codex/author/italian',sha:'old',raw:'---\ntitle: Italy\ndraft: true\n---\nSaved draft text with ![](photo.jpg)\n'};
+  api.read=async(_path,main)=>main?published:{...editing,sha:state.sha};
+  const result=await api.unpublish(entryPath,published);
+  assert.match(state.savedRaw,/draft: true/);
+  assert.match(state.savedRaw,/Saved draft text with !\[\]\(photo.jpg\)/);
+  assert.equal(result.publication,'withdrawn');
+  assert.equal(result.branch,'main');
+  assert.equal(state.calls.find(call=>call.route.endsWith('/merges')).body.head,'saved-commit');
+  assert.match(state.calls.find(call=>call.route.endsWith('/merges')).body.commit_message,/Снята с публикации/);
+  assert.equal(state.hasBranch,false);
+});
+test('unpublishing refuses stale main and never writes',async()=>{
+  const {api,state}=publishingAPI();
+  api.read=async()=>({branch:'main',sha:'new',raw:'---\ntitle: Italy\n---\nChanged'});
+  await assert.rejects(api.unpublish(entryPath,{branch:'main',sha:'old'}),/Опубликованная запись изменилась/);
+  assert.equal(state.calls.length,0);
+});
+test('unpublishing does not report a failed merge as success and recovers a lost response',async()=>{
+  for(const options of [{mergeFails:true},{mergeLost:true}]) {
+    const {api,state}=publishingAPI(options);
+    const main={branch:'main',sha:'old',raw:'---\ntitle: Italy\ndraft: false\n---\nBody\n'};
+    api.read=async()=>({...main,sha:state.sha});
+    const result=await api.unpublish(entryPath,main);
+    assert.equal(result.publication,options.mergeFails?'pending':'withdrawn');
+    if(options.mergeFails)assert.equal(result.action,'unpublish');
+  }
+});
+
+test('photo upload progress advances only after each GitHub blob succeeds',async()=>{
+  const {api,state}=publishingAPI();const progress=[];
+  await api.save(entryPath,'post',{sha:'old'},[
+    {path:'src/content/blog/italian/first.jpg',content:'YQ=='},
+    {path:'src/content/blog/italian/second.png',content:'Yg=='},
+  ],false,value=>progress.push(value));
+  assert.deepEqual(progress,[{completed:0,total:2},{completed:1,total:2},{completed:2,total:2}]);
+  assert.equal(state.calls.filter(call=>call.route.endsWith('/git/blobs')).length,3);
+});

@@ -9,6 +9,7 @@ import pagefind from "astro-pagefind";
 // https://astro.build/config
 export default defineConfig({
   site: "https://kaban.blog",
+  devToolbar: { enabled: false },
   vite: { plugins: [tailwindcss()] },
   integrations: [ sitemap({ filter: page => !page.endsWith("/author/") }), mdx(), pagefind({ indexConfig: {
     rootSelector: "#main-content",

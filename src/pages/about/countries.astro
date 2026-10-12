@@ -8,7 +8,7 @@ const countries = [...new Set(cities.map(city => city.data.country))].sort((a, b
 ---
 <Layout title="Города" description="Города, в которых я побывал, и мои оценки">
   <Container>
-    <div class="journal-page-heading">
+    <div class="journal-page-heading" data-author-collection="countries">
       <a href="/world/" class="back-to-notes">← Мир</a>
       <h1>Города<span class="accent-dot">.</span></h1>
       <p class="journal-page-intro">Места, в которых я побывал, и мои впечатления.</p>
