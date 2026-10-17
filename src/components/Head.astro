@@ -11,12 +11,16 @@ interface Props {
   title: string;
   description: string;
   image?: string;
+  imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  type?: 'website' | 'article';
   disableTransitions?: boolean;
 }
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
-const { title, description, image = "/android-chrome-512x512.png", disableTransitions = false } = Astro.props;
+const { title, description, image = "/og/site.jpg", imageAlt = title, imageWidth = Astro.props.image ? undefined : 1200, imageHeight = Astro.props.image ? undefined : 630, type = 'website', disableTransitions = false } = Astro.props;
 ---
 
 <!-- Global Metadata -->
@@ -40,11 +44,16 @@ const { title, description, image = "/android-chrome-512x512.png", disableTransi
 <meta name="description" content={description} />
 
 <!-- Open Graph / Facebook -->
-<meta property="og:type" content="website" />
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content="Блог Кабана" />
+<meta property="og:locale" content="ru_RU" />
 <meta property="og:url" content={canonicalURL} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
 <meta property="og:image" content={new URL(image, canonicalURL)} />
+<meta property="og:image:alt" content={imageAlt} />
+{imageWidth && <meta property="og:image:width" content={String(imageWidth)} />}
+{imageHeight && <meta property="og:image:height" content={String(imageHeight)} />}
 
 <!-- Twitter -->
 <meta property="twitter:card" content="summary_large_image" />
@@ -52,6 +61,7 @@ const { title, description, image = "/android-chrome-512x512.png", disableTransi
 <meta property="twitter:title" content={title} />
 <meta property="twitter:description" content={description} />
 <meta property="twitter:image" content={new URL(image, canonicalURL)} />
+<meta property="twitter:image:alt" content={imageAlt} />
 
 <!-- PageFind -->
 <link rel="alternate" type="application/rss+xml" title="Блог Кабана" href="/rss.xml" />

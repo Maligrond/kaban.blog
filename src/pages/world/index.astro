@@ -4,6 +4,7 @@ import Container from "@components/Container.astro";
 import FormattedDate from "@components/FormattedDate.astro";
 import NotePreview from "@components/NotePreview.astro";
 import TravelMap from "@components/TravelMap.astro";
+import TravelTimeline from "@components/TravelTimeline.astro";
 import { getCollection } from "astro:content";
 import { Image } from "astro:assets";
 
@@ -61,7 +62,11 @@ const stories = (await getCollection("blog"))
         <a href="/about/countries/">Все города с оценками ↗</a>
       </div>
       <TravelMap cities={cities} />
-      <section class="country-atlas" aria-label="Города по странам">
+      <div class="world-views" role="group" aria-label="Показать поездки" hidden data-world-views data-pagefind-ignore>
+        <button type="button" aria-pressed="true" aria-controls="world-countries" data-world-view="countries">По странам</button>
+        <button type="button" aria-pressed="false" aria-controls="world-years" data-world-view="years">По годам</button>
+      </div>
+      <section id="world-countries" class="country-atlas" aria-label="Города по странам">
         {[
           countryGroups.filter((group) =>
             group.cities.some((city) => city.data.photo),
@@ -121,6 +126,7 @@ const stories = (await getCollection("blog"))
           </div>
         ))}
       </section>
+      <TravelTimeline cities={cities} />
       {favorites.length > 0 && (
         <aside class="world-favorites">
           <h2>Любимые места</h2>
@@ -149,7 +155,38 @@ const stories = (await getCollection("blog"))
   </Container>
 </Layout>
 
+<script>
+  function setupWorldViews() {
+    const controls=document.querySelector<HTMLElement>('[data-world-views]');
+    const countries=document.getElementById('world-countries');
+    const years=document.getElementById('world-years');
+    if(!controls || !countries || !years || controls.dataset.ready)return;
+    controls.dataset.ready='true';controls.hidden=false;
+    const buttons=controls.querySelectorAll<HTMLButtonElement>('[data-world-view]');
+    function show(view:string) {
+      countries!.hidden=view==='years';years!.hidden=view!=='years';
+      buttons.forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.worldView===view)));
+    }
+    function fromHash(){show(location.hash==='#years'?'years':'countries');}
+    buttons.forEach(button=>button.addEventListener('click',()=>{
+      const view=button.dataset.worldView!;show(view);
+      history.replaceState(history.state,'',location.pathname+location.search+(view==='years'?'#years':''));
+    }));
+    window.addEventListener('hashchange',fromHash);
+    document.addEventListener('astro:before-swap',()=>window.removeEventListener('hashchange',fromHash),{once:true});
+    fromHash();
+  }
+  setupWorldViews();
+  document.addEventListener('astro:page-load',setupWorldViews);
+</script>
+
 <style>
+  .world-views:not([hidden]) { display:flex; gap:20px; margin-top:22px; font:16px/1.4 'PT Sans',sans-serif; }
+  .world-views button { cursor:pointer; padding:5px 0; color:var(--journal-muted); border-bottom:1px solid transparent; }
+  .world-views button[aria-pressed="true"] { color:var(--journal-ink); border-bottom-color:var(--journal-accent); }
+  .world-views button:hover { color:var(--journal-accent); }
+  .world-views button:focus-visible { outline:2px solid var(--journal-accent); outline-offset:4px; }
+  .world-views ~ .country-atlas { margin-top:20px; }
   .world-page {
     max-width: 1080px;
   }

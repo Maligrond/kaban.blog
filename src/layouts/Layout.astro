@@ -11,10 +11,14 @@ type Props = {
   description: string;
   disableTransitions?: boolean;
   image?: string;
+  imageAlt?: string;
+  imageWidth?: number;
+  imageHeight?: number;
+  type?: 'website' | 'article';
   searchDescription?: string;
 };
 
-const { title, description, image, searchDescription = description, disableTransitions = false } = Astro.props;
+const { title, description, image, imageAlt, imageWidth, imageHeight, type, searchDescription = description, disableTransitions = false } = Astro.props;
 const pathname = Astro.url.pathname;
 const searchType = /^\/blog\/[^/]+\//.test(pathname) ? "Запись"
   : pathname.startsWith("/countries/") ? "Город"
@@ -24,7 +28,7 @@ const searchType = /^\/blog\/[^/]+\//.test(pathname) ? "Запись"
 <!doctype html>
 <html lang="ru">
   <head>
-    <Head title={`${title} | ${SITE.TITLE}`} description={description} image={image} disableTransitions={disableTransitions} />
+    <Head title={`${title} | ${SITE.TITLE}`} description={description} image={image} imageAlt={imageAlt} imageWidth={imageWidth} imageHeight={imageHeight} type={type} disableTransitions={disableTransitions} />
   </head>
   <body>
     <a class="skip-to-content" href="#main-content">К содержимому</a>

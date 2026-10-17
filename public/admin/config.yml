@@ -172,7 +172,8 @@ collections:
         max: 2
         hint: "Оставь пустым: при публикации карта найдёт город по названию и стране. Заполняй только для уточнения места: сначала широта, затем долгота. Например, Рапалло: 44.3496 и 9.22796."
         field: { label: "Координата", name: "value", widget: "number", value_type: "float" }
-      - { label: "Дата поездки", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
+      - { label: "Дата карточки", name: "date", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, required: true }
+      - { label: "Год поездки", name: "visitedYear", widget: "number", value_type: "int", min: 1900, max: 2100, required: false, hint: "Для хронологии в разделе Мир. Оставь пустым, если год неизвестен: город останется в группе Без года." }
       - { label: "Оценка", name: "rating", widget: "number", value_type: "int", min: 1, max: 5, step: 1, required: true }
       - { label: "Черновик", name: "draft", widget: "boolean", default: false, required: false }
       - { label: "Флаг (эмодзи)", name: "flag", widget: "string", required: true }

@@ -6,7 +6,6 @@ import Container from "@components/Container.astro";
 import FormattedDate from "@components/FormattedDate.astro";
 import Giscus from "@components/Giscus.astro";
 import RelatedPosts from "@components/RelatedPosts.astro";
-import {getImage} from 'astro:assets';
 
 export async function getStaticPaths() {
   const posts = (await getCollection("blog"))
@@ -29,10 +28,10 @@ const cities = post.data.cities
   .map(reference => allCities.find(city => city.id === reference.id))
   .filter((city): city is CollectionEntry<"countries"> => !!city && !city.data.draft);
 const { Content } = await render(post);
-const shareImage=post.data.coverDisabled ? undefined : post.data.cover ? (await getImage({src:post.data.cover,width:Math.min(post.data.cover.width,1200),format:'jpeg'})).src : post.data.previewImage;
+const shareImage=`/og/blog/${post.id.split('/').map(encodeURIComponent).join('/')}.jpg`;
 ---
 
-<Layout title={post.data.title} description={post.data.description} image={shareImage} searchDescription={postSummary(post.data.excerpt || post.body, 180) || post.data.description}>
+<Layout title={post.data.title} description={postSummary(post.data.excerpt || post.data.description,180)} image={shareImage} imageAlt={post.data.title} imageWidth={1200} imageHeight={630} type="article" searchDescription={postSummary(post.data.excerpt || post.body, 180) || post.data.description}>
   <Container>
     <div class="post-heading blog-post-heading" data-author-path={`src/content/blog/${post.id}/index.md`}>
       <a class="back-to-notes" href="/blog/">← Все записи</a>

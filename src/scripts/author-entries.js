@@ -30,6 +30,12 @@ export function shelfValues(collection, fields) {
   } else {
     if (!fields.country.trim()) throw new Error('Укажи страну.');
     values.country=fields.country.trim(); values.flag=fields.flag.trim(); values.favorite=!!fields.favorite;
+    const visitedYear=String(fields.visitedYear ?? '').trim();
+    if(visitedYear) {
+      const year=Number(visitedYear);
+      if(!Number.isInteger(year) || year<1900 || year>2100)throw new Error('Укажи год поездки от 1900 до 2100 или оставь поле пустым.');
+      values.visitedYear=year;
+    }
   }
   if (collection!=='countries' && fields.url?.trim()) {
     let url;

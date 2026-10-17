@@ -227,6 +227,9 @@ async function openEditor(path, collection = path ? entryCollection(path) : 'blo
       if(collection==='games') {const year=shelfField('Год выпуска','year','number');year.required=true;year.min='1900';year.max='2100';}
       if(collection==='countries') {
         shelfField('Страна','country').required=true;
+        const visitedYear=shelfField('Год поездки (необязательно)','visitedYear','number');
+        visitedYear.min='1900';visitedYear.max='2100';visitedYear.step='1';
+        shelfMeta.append(create('p',{class:'author-photo-hint'},'Этот год определяет место города в хронологии «Мира». Оставь пустым, если не помнишь: город будет в группе «Без года».'));
         shelfField('Флаг (эмодзи, необязательно)','flag');
         const favorite=shelfField('Любимое место','favorite','checkbox');favorite.checked=!!doc.get('favorite');
       }
@@ -241,7 +244,7 @@ async function openEditor(path, collection = path ? entryCollection(path) : 'blo
       else shelfMeta.append(create('p',{class:'author-photo-hint'},'Координаты определятся по названию города и стране при следующей сборке сайта.'));
       text.parentElement.before(shelfMeta);
       text.parentElement.querySelector('span').textContent=collection==='countries'?'О городе':'Мои впечатления';
-      date.parentElement.querySelector('span').textContent=collection==='countries'?'Дата поездки':collection==='books'?'Дата прочтения':'Дата прохождения';
+      date.parentElement.querySelector('span').textContent=collection==='countries'?'Дата карточки':collection==='books'?'Дата прочтения':'Дата прохождения';
     }
     const settings = create('details',{class:'author-settings'});
     settings.append(create('summary',{},isPage ? 'Настройки страницы' : isShelf ? 'Дата и адрес' : 'Теги и настройки записи'),meta);
@@ -756,6 +759,7 @@ async function openEditor(path, collection = path ? entryCollection(path) : 'blo
           const values=shelfValues(collection,Object.fromEntries(Object.entries(shelfFields).map(([name,input])=>[name,input.type==='checkbox'?input.checked:input.value])));
           for(const [name,value] of Object.entries(values))doc.set(name,value);
           if(collection!=='countries' && !values.url)doc.delete('url');
+          if(collection==='countries' && !values.visitedYear)doc.delete('visitedYear');
           if(shelfStatuses[collection] && !values.status)doc.delete('status');
           doc.delete('description');doc.delete('descriptionAutomatic');
         }

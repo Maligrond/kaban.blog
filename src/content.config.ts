@@ -71,7 +71,7 @@ const movies = defineCollection({
 });
 const countries = defineCollection({
   loader: glob({ pattern: "*.md", base: "./src/content/countries" }),
-  schema: ({ image }) => z.object({ ...reviewFields, country: z.string(), flag: z.string(), favorite: z.boolean().default(false), photo: image().optional(), photoAlt: z.string().optional(), coordinates: z.preprocess(value => value === null || (Array.isArray(value) && value.length === 0) ? undefined : value, z.tuple([z.number().min(-90).max(90), z.number().min(-180).max(180)]).optional()) }),
+  schema: ({ image }) => z.object({ ...reviewFields, country: z.string(), flag: z.string(), favorite: z.boolean().default(false), visitedYear: z.preprocess(value => value === null || value === '' ? undefined : value, z.number().int().min(1900).max(2100).optional()), photo: image().optional(), photoAlt: z.string().optional(), coordinates: z.preprocess(value => value === null || (Array.isArray(value) && value.length === 0) ? undefined : value, z.tuple([z.number().min(-90).max(90), z.number().min(-180).max(180)]).optional()) }),
 });
 const bookmarkItems = defineCollection({
   loader: file("src/content/bookmarkItems/items.json", {
